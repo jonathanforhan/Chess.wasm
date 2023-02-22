@@ -1,0 +1,20 @@
+{
+  "name": "chess-wasm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/lib.rs",
+  "scripts": {
+    "build": "wasm-pack build --target web && cp -r ./pkg/* ./js/src/engine/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonathanforhan/chess-wasm.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jonathanforhan/chess-wasm/issues"
+  },
+  "homepage": "https://github.com/jonathanforhan/chess-wasm#readme"
+}
