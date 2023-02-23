@@ -1,77 +1,53 @@
+use super::{Piece, Color};
+
 pub struct Bishop {
     bits: u128,
+    color: Color,
 }
 
-use super::Piece;
 impl Piece for Bishop {
     type T = Bishop;
 
-    fn new(x: usize, y: usize) -> Self::T {
-        Bishop { bits: 1 << (y << 4) + 8 + x }
+    fn new(x: usize, y: usize, color: Color) -> Self::T {
+        Bishop { bits: 1 << (y << 4) + 8 + x, color }
+    }
+
+    fn bits(&self) -> &u128 {
+        &self.bits
     }
 
     fn moves(&self, opp: &u128, team: &u128) -> Vec<Bishop> {
-        let mut v = Vec::<Bishop>::new();
+        let mut valid_moves = Vec::<Bishop>::new();
+        let bits = &self.bits;
 
-        let mut test_move = |t: &u128| -> bool {
-            if t & team != 0 { return false; }
-            if t & opp  != 0 { v.push(Bishop { bits: *t }); return false; }
-            v.push(Bishop { bits: *t });
+        let mut validate = |test: &u128| -> bool {
+            if test & team != 0 { return false; }
+            if test & opp  != 0 { valid_moves.push(Bishop { bits: *test, color: self.color }); return false; }
+            valid_moves.push(Bishop { bits: *test, color: self.color });
             return true;
         };
 
-        /* Northwest */
-        for i in 1..8 {
-            let test = &self.bits << (i << 4) + i;
-            if !test_move(&test) { break; }
-        }
-        /* Southeast */
-        for i in 1..8 {
-            let test = &self.bits >> (i << 4) + i;
-            if !test_move(&test) { break; }
-        }
-        /* Northeast */
-        for i in 1..8 {
-            let test = &self.bits << (i << 4) - i;
-            if !test_move(&test) { break; }
-        }
-        /* Southwest */
-        for i in 1..8 {
-            let test = &self.bits >> (i << 4) - i;
-            if !test_move(&test) { break; }
-        }
+        fn test_move<F, G>(condition: F, validation: &mut G)
+            where F: Fn(i32) -> u128, G: FnMut(&u128) -> bool {
 
-        return v;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn print_bits() {
-        let b = Bishop::new(4, 4);
-        let opp = 0u128;
-        let team = 0u128;
-        let v = b.moves(&opp, &team);
-
-        let mut x: u128 = 0;
-
-        for n in v.iter() {
-            x ^= n.bits;
-        }
-
-        for i in (-15..=112).rev().step_by(16) { // 0..128 but with rev-step
-            for j in 0..8 {
-                print!("{} ", (x >> (i + j + 8) & 1)
-                       .to_string()
-                       .replace('1', &'B'.to_string())
-                       .replace('0', "*"));
+            for i in 1..8 {
+                let test = condition(i);
+                if !validation(&test) { break; }
             }
-            println!(". . . . . . . .");
         }
-        print!("\n");
 
+        /* Northwest */
+        test_move(|i: i32| { bits << (i << 4) + i }, &mut validate);
+
+        /* Southeast */
+        test_move(|i: i32| { bits >> (i << 4) + i }, &mut validate);
+
+        /* Northeast */
+        test_move(|i: i32| { bits << (i << 4) - i }, &mut validate);
+
+        /* Southwest */
+        test_move(|i: i32| { bits >> (i << 4) - i }, &mut validate);
+
+        return valid_moves;
     }
 }
