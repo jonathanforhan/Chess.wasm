@@ -1,8 +1,12 @@
+/* Criteria and regex taken from Chess.js source code
+ * https://github.com/jhlywa/chess.js/blob/master/src/chess.ts
+ */
+
 use regex::Regex;
+use wasm_bindgen::UnwrapThrowExt;
 use super::FenError;
 
 pub fn validate<'a>(fen: &str) -> Result<(), FenError<'a>> {
-    // Criteria and regex taken from Chess.js source code //
     // 1st requirement: 6 space-seperated fields
     let fen: Vec<&str> = fen.split_whitespace().collect();
     if fen.len() != 6 {
@@ -44,7 +48,52 @@ pub fn validate<'a>(fen: &str) -> Result<(), FenError<'a>> {
     }
 
     // 8th requirement: every row valid
-    /* TODO */
+    for s in rows {
+        // check sum of 8 and no numbers in succession
+        let mut sum = 0;
+        let mut prev_num = false;
+        for c in s.chars() {
+            if let Some(c) = c.to_digit(10) {
+                if prev_num {
+                    return Err(FenError { error: "Invalid Fen: piece data is invalid, consecutive number" });
+                }
+                sum += c;
+                prev_num = true;
+            } else {
+                let re = Regex::new(r"^[prnbqkPRNBQK]$").unwrap();
+                if !re.is_match(&c.to_string()) {
+                    return Err(FenError { error: "Invalid Fen: piece data is invalid, invalid piece" });
+                }
+                sum += 1;
+                prev_num = false;
+            }
+        }
+        if sum != 8 {
+            return Err(FenError { error: "Invalid Fen: piece data is invalid, wrong number of squares" });
+        }
+    }
+
+    // Ensure coherence between fields
+    if fen[3].chars().nth(1).unwrap() == '3' && fen[1] == "w" ||
+       fen[3].chars().nth(1).unwrap() == '6' && fen[1] == "b" {
+        return Err(FenError { error: "Invalid Fen: invalid en-passant square" });
+    }
+
+    let count_kings = |c: char| {
+        // ensure we find a king
+        if let Some(i) = fen[0].find(c) {
+            let (_, substr) = fen[0].split_at(i + 1);
+            // ensure there's only one
+            if substr.find(c) != None {
+                return Err(FenError { error: "Invalid Fen: too many kings" });
+            }
+            Ok(())
+        } else {
+            return Err(FenError { error: "Invalid Fen: too few kings" });
+        }
+    };
+    count_kings('K')?;
+    count_kings('k')?;
 
     Ok(())
 }

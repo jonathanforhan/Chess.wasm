@@ -2,8 +2,6 @@ use super::*;
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen::UnwrapThrowExt;
-
     use super::*;
     /* cargo test [TEST NAME] -- --nocapture */
     #[test]
