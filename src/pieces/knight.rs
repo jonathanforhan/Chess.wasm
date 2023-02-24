@@ -1,4 +1,5 @@
 use super::{Piece, Color};
+use crate::MASK;
 
 pub struct Knight {
     bits: u128,
@@ -16,11 +17,16 @@ impl Piece for Knight {
         &self.bits
     }
 
+    fn color(&self) -> &Color {
+        &self.color
+    }
+
     fn moves(&self, _: &u128, team: &u128) -> Vec<Knight> {
         let mut valid_moves = Vec::<Knight>::new();
         let bits = &self.bits;
 
         let mut validate = |test: u128| {
+            if test & MASK == 0 { return; }
             if test & team != 0 { return; }
             valid_moves.push(Knight { bits: test, color: self.color });
         };

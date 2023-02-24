@@ -3,7 +3,6 @@
  */
 
 use regex::Regex;
-use wasm_bindgen::UnwrapThrowExt;
 use super::FenError;
 
 pub fn validate<'a>(fen: &str) -> Result<(), FenError<'a>> {
@@ -74,7 +73,8 @@ pub fn validate<'a>(fen: &str) -> Result<(), FenError<'a>> {
     }
 
     // Ensure coherence between fields
-    if fen[3].chars().nth(1).unwrap() == '3' && fen[1] == "w" ||
+    if fen[3] == "-" {}
+    else if fen[3].chars().nth(1).unwrap() == '3' && fen[1] == "w" ||
        fen[3].chars().nth(1).unwrap() == '6' && fen[1] == "b" {
         return Err(FenError { error: "Invalid Fen: invalid en-passant square" });
     }

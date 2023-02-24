@@ -1,7 +1,9 @@
 mod validate;
 pub use validate::validate;
 mod encode;
+//pub use encode::encode;
 mod decode;
+pub use decode::decode;
 
 use core::fmt;
 use std::error::Error;

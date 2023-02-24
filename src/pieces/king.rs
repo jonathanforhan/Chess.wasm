@@ -1,4 +1,5 @@
 use super::{Piece, Color};
+use crate::MASK;
 
 pub struct King {
     bits: u128,
@@ -16,17 +17,22 @@ impl Piece for King {
         &self.bits
     }
 
-    fn moves(&self, opp: &u128, team: &u128) -> Vec<King> {
+    fn color(&self) -> &Color {
+        &self.color
+    }
+
+    fn moves(&self, opp: &u128, no_go: &u128) -> Vec<King> {
         /* NOTE
-         * opp MUST be the sum of all oppositision attacks
-         * NOT a piece map
+         * nogo MUST be the sum of all oppositision attacks
+         * and teammates
          */
         let mut valid_moves = Vec::<King>::new();
         let bits = &self.bits;
         let color = &self.color;
 
         let mut validate = |test: &u128| {
-            if test & (team | opp) != 0 { return; }
+            if test & MASK == 0 { return; }
+            if test & (no_go | opp) != 0 { return; }
             valid_moves.push(King { bits: *test, color: *color });
         };
 

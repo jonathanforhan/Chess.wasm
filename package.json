@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/lib.rs",
   "scripts": {
-    "build": "wasm-pack build --target web && cp -r ./pkg/* ./js/src/engine/"
+    "build": "wasm-pack build --target web && cp -r ./pkg/* ./js/src/wasm/"
   },
   "repository": {
     "type": "git",

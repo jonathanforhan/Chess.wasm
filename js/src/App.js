@@ -3,21 +3,22 @@ import { useState, useRef, useEffect } from 'react';
 import { Chessboard } from 'react-chessboard';
 import SideMenu from './components/SideMenu';
 import useWindowDimensions from './util/useWindowDimensions';
-import init, { Chess } from "./engine/chess_wasm.js"
+import init, { Chess } from "./wasm/chess_wasm.js"
 
 function App() {
   const _window = useWindowDimensions();
 
-  //const [game, setGame] = useState(new Chess());
+  const [loading, setLoading] = useState(true);
+  const [game, setGame] = useState(null);
   const [currentTimeout, setCurrentTimeout] = useState();
   const chessboardRef = useRef(null);
 
   useEffect(() => {
     init().then(() => {
-      let chess = new Chess('4k2r/6r1/8/8/8/8/3R4/R3K3 w Qk - 0 1');
-      console.log(chess.fen());
+      setGame(new Chess("8/5k2/3p4/1p1Pp2p/pP2Pp1P/P4P1K/8/8 b - - 99 50"));
+      setLoading(false);
     })
-  }, [])
+  }, []);
 
   /**
    * @param {function} modify - modify function for the game Object
@@ -35,11 +36,6 @@ function App() {
    * @param {string} fen - fen notation of current position
    */
   function oppTurn(fen) {
-    init().then(() => {
-      let chess = new Chess(fen);
-      console.log(chess.get_fen());
-      //safeGameMutate(g => g.move({ from: "a7", to: "a5" }));
-    });
   }
 
   /**
@@ -64,12 +60,14 @@ function App() {
     //return true;
   //}
 
+  if(loading) { return <></> } else {
   return (
     <div className='App flex justify-center bg-slate-700 py-20 h-[100vh]'>
       <div className='ChessboardWrapper'>
         <Chessboard
           id='chessBoard'
-          position={'start'}
+          position={game.fen()}
+          onPieceDrop={(src, dst) => console.log(src, dst, game.moves())}
           arePremovesAllowed={true}
           boardWidth={_window.height - 160}
           customBoardStyle={{
@@ -88,5 +86,7 @@ function App() {
       </div>
   );
 }
+
+} // else
 
 export default App;
