@@ -1,0 +1,11 @@
+{
+  "name": "chess.wasm",
+  "version": "1.0.0",
+  "main": "src/lib.rs",
+  "repository": "https://github.com/jonathanforhan/Chess.wasm",
+  "author": "Jonathan Forhan",
+  "license": "MIT",
+  "scripts": {
+    "build": "wasm-pack build --target web"
+  }
+}

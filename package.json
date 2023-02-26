@@ -1,20 +1,23 @@
 {
-  "name": "chess-wasm",
-  "version": "1.0.0",
-  "description": "",
-  "main": "src/lib.rs",
+  "name": "chess.wasm",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "build": "wasm-pack build --target web && cp -r ./pkg/* ./js/src/wasm/"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jonathanforhan/chess-wasm.git"
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-chessboard": "^2.1.0",
+    "react-dom": "^18.2.0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/jonathanforhan/chess-wasm/issues"
-  },
-  "homepage": "https://github.com/jonathanforhan/chess-wasm#readme"
+  "devDependencies": {
+    "@types/react": "^18.0.27",
+    "@types/react-dom": "^18.0.10",
+    "@vitejs/plugin-react-swc": "^3.0.0",
+    "typescript": "^4.9.3",
+    "vite": "^4.1.0"
+  }
 }
