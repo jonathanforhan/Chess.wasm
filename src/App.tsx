@@ -1,43 +1,36 @@
-import { useEffect, useState, useRef } from 'react'
+import './App.css';
+import { useState, useEffect } from 'react';
 import { Chessboard } from 'react-chessboard';
-import init, { Chess } from '../wasm/pkg/chess_wasm.js'
-import './App.css'
+import Chess from './chess/chess';
 import SideBar from './components/side-bar.js';
 import useWindowDimensions from './hooks/use-window-dimensions.js';
-
+    
 function App() {
   const _window = useWindowDimensions();
 
-  const [loading, setLoading] = useState(true);
-  const [game, setGame] = useState({} as Chess);
-  const [currentTimeout, setCurrentTimeout] = useState(0);
-  const chessboardRef = useRef();
-  
-  useEffect(() => {
-    init().then(() => {
-      setGame(new Chess("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"));
-      setLoading(false);
-    })
-  }, []);
+  const [game, setGame] = useState(new Chess(""));
+  const [turn, setTurn] = useState(false);
 
-  function safeGameMutate(modify: Function) {
-    const update = new Chess(game.fen());
-    modify(update);
-    setGame(update);
-  }
-
-  function oppTurn(fen: string) {
-    const gameCopy: Chess = new Chess(fen)
+  function oppTurn() {
+    let gameCopy: Chess = new Chess(game.fen());
     let moves = gameCopy.moves();
     let i = Math.floor(Math.random() * moves.length);
-    console.log(moves[i])
-    safeGameMutate((g: Chess) => g.movePiece(moves[i]))
+    console.log(moves[i]);
+    console.log(gameCopy.fen())
+    gameCopy.move(moves[i]);
+    setGame(gameCopy);
+    setTurn(false);
   }
 
+  useEffect(() => {
+    if(!turn) return;
+    oppTurn();
+  }, [turn]);
+
   function onDrop(src: String, dst: String) {
-    const gameCopy: Chess = new Chess(game.fen());
+    let gameCopy: Chess = new Chess(game.fen());
     try {
-      gameCopy.movePiece({
+      gameCopy.move({
         from: src,
         to: dst,
       });
@@ -45,13 +38,11 @@ function App() {
       console.log(e)
       return false;
     }
-    setGame(gameCopy);
-    oppTurn(gameCopy.fen())
-
+    setGame(gameCopy)
+    setTurn(true);
     return true;
   }
 
-  if(loading === true) return <></>;
   return (
     <div className="App">
       <div className="Title"><h1>Chess.wasm Demo</h1></div>

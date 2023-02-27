@@ -1,4 +1,7 @@
 use std::io::{Result, Error};
+
+use crate::test;
+
 use super::pieces::{Color, Piece, Pieces};
 
 pub struct Game {
@@ -23,13 +26,14 @@ impl Game {
     }
 
     pub fn moves(&self) -> Vec<Pieces> {
+        /* TODO seperate team moves and opp moves */
         let mut moves: Vec<Pieces> = Vec::new();
 
         let mut white_king_moves: Vec<&Pieces> = Vec::new();
         let mut black_king_moves: Vec<&Pieces> = Vec::new();
 
-        let (mut white_attacks, mut black_attacks) = (0u128, 0u128);
-        let (mut white_pieces,  mut black_pieces)  = (0u128, 0u128);
+        let (mut white_attacks, mut black_attacks): (u128, u128) = (0, 0);
+        let (mut white_pieces,  mut black_pieces): (u128, u128) = (0, 0);
 
         // create boards
         for piece in &self.pieces {
@@ -92,12 +96,16 @@ impl Game {
         let white_no_go = black_attacks | white_pieces;
         let black_no_go = white_attacks | black_pieces;
 
+        test::print_bits(&white_no_go, 'w');
+        test::print_bits(&black_no_go, 'b');
+
         // ensure white does not move into check
         for k in white_king_moves {
-            moves.append(&mut k.moves(&black_pieces, &white_no_go));
+            moves.append(&mut k.moves(&black_pieces, &white_no_go)); // <- (opp, no-go) [enum
+                                                                     // dispatch messes it up]
         }
         for k in black_king_moves {
-            moves.append(&mut k.moves(&white_pieces, &black_no_go));
+            moves.append(&mut k.moves(&white_pieces, &black_no_go)); // <- (opp, no-go)
         }
 
         /* TODO */
@@ -120,7 +128,7 @@ impl Game {
             // subtract a captured piece
             } else {
                 if piece.bits() & !mv == 0 {
-                    piece.set_bits(&(piece.bits() & mv))
+                    piece.set_bits(&(piece.bits() & 0x0))
                 }
             }
         }

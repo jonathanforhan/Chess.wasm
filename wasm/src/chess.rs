@@ -11,78 +11,66 @@ use super::game::{
     }
 };
 
-/* Chess struct is essentially a JS wrapper on game */
 #[wasm_bindgen]
-pub struct Chess {
-    fen: String,
-    game: Game,
+pub fn validate(fen: &str) -> Result<(), JsError> {
+    match fen::validate(fen) {
+        Ok(_) => Ok(()),
+        Err(e) => return Err(JsError::new(&format!("{}", e)))
+    }
 }
 
 #[wasm_bindgen]
-#[allow(non_snake_case)]
-impl Chess {
-    #[wasm_bindgen(constructor)]
-    pub fn new(fen: &str) -> Self {
-        let game = fen::decode(fen).unwrap_or(
-            fen::decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1").unwrap()
-        );
-        Chess { fen: fen.to_string(), game }
-    }
-
-    pub fn load(&mut self, fen: &str) {
-        let game = fen::decode(fen).unwrap_or(
-            fen::decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1").unwrap()
-        );
-        self.game = game;
-    }
-
-    pub fn fen(&self) -> String {
-        self.fen.clone()
-    }
-
-    pub fn moves(&self) -> Option<js_sys::Array> {
-        let mut current: u128 = 0;
-        for p in &self.game.pieces {
-            if p.color() == &self.game.turn {
-                current |= p.bits();
-            }
+pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
+    let game: Game = match fen::decode(fen) {
+        Ok(g) => g,
+        Err(e) => return Err(JsError::new(&format!("{}", e)))
+    };
+    let mut current: u128 = 0;
+    for p in &game.pieces {
+        if p.color() == &game.turn {
+            current |= p.bits();
         }
-
-        let arr = js_sys::Array::new();
-
-        let mvs = &self.game.moves();
-        for m in mvs {
-            let src = current & m.bits(); // find the matching starting location
-            let dst = m.bits() ^ src;     // subtract starting pos from move map
-            let from = bits_to_algebraic(&src);
-            let to = bits_to_algebraic(&dst);
-            let obj = js_sys::Object::new();
-            js_sys::Reflect::set(&obj, &"from".into(), &JsValue::from_str(&from.unwrap_throw())).unwrap_throw();
-            js_sys::Reflect::set(&obj, &"to".into(), &JsValue::from_str(&to.unwrap_throw())).unwrap_throw();
-            arr.push(&obj);
-        }
-
-        Some(arr)
     }
 
-    pub fn movePiece(&mut self, obj: js_sys::Object) -> Result<(), JsError> {
-        assert!(js_sys::Reflect::has(&obj, &"from".into()).unwrap());
-        assert!(js_sys::Reflect::has(&obj, &"to".into()).unwrap());
-        let from = js_sys::Reflect::get(&obj, &"from".into()).unwrap_throw();
-        let to = js_sys::Reflect::get(&obj, &"to".into()).unwrap_throw();
-        let src = algebraic_to_bits(JsValue::as_string(&from).unwrap_throw()).unwrap_throw();
-        let dst = algebraic_to_bits(JsValue::as_string(&to).unwrap_throw()).unwrap_throw();
+    let arr = js_sys::Array::new();
 
-        if let Err(e) = self.game.valid_move(&(src | dst)) {
-            return Err(JsError::new(&format!("{}", e)));
-        }
-        self.game.move_piece(src | dst);
-
-        let fen = fen::encode(&self.game);
-        match fen {
-            Err(e) => return Err(JsError::new(&format!("{}", e))),
-            Ok(s) =>  self.fen = s,
-        }
-        Ok(())
+    let mvs = game.moves();
+    for m in mvs {
+        let src = current & m.bits(); // find the matching starting location
+        let dst = m.bits() ^ src;     // subtract starting pos from move map
+        let from = bits_to_algebraic(&src);
+        let to = bits_to_algebraic(&dst);
+        let obj = js_sys::Object::new();
+        js_sys::Reflect::set(&obj, &"from".into(), &JsValue::from_str(&from.unwrap_throw())).unwrap_throw();
+        js_sys::Reflect::set(&obj, &"to".into(), &JsValue::from_str(&to.unwrap_throw())).unwrap_throw();
+        arr.push(&obj);
     }
+
+    Ok(arr)
+}
+
+#[wasm_bindgen]
+pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
+    let mut game: Game = match fen::decode(fen) {
+        Ok(g) => g,
+        Err(e) => return Err(JsError::new(&format!("{}", e)))
+    };
+    assert!(js_sys::Reflect::has(&obj, &"from".into()).unwrap());
+    assert!(js_sys::Reflect::has(&obj, &"to".into()).unwrap());
+    let from = js_sys::Reflect::get(&obj, &"from".into()).unwrap_throw();
+    let to = js_sys::Reflect::get(&obj, &"to".into()).unwrap_throw();
+    let src = algebraic_to_bits(JsValue::as_string(&from).unwrap_throw()).unwrap_throw();
+    let dst = algebraic_to_bits(JsValue::as_string(&to).unwrap_throw()).unwrap_throw();
+
+    if let Err(e) = game.valid_move(&(src | dst)) {
+        return Err(JsError::new(&format!("{}", e)));
+    }
+    game.move_piece(src | dst);
+
+    let return_fen: String = match fen::encode(&game) {
+        Ok(f) => f,
+        Err(e) => return Err(JsError::new(&format!("{}", e)))
+    };
+
+    Ok(return_fen)
 }
