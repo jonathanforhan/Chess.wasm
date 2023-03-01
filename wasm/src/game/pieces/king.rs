@@ -25,9 +25,9 @@ impl Piece for King {
         self.bits = *bits;
     }
 
-    fn moves(&self, opp: &u128, no_go: &u128) -> Vec<Pieces> {
+    fn moves(&self, opp: &u128, team: &u128) -> Vec<Pieces> {
         /* NOTE
-         * nogo MUST be the sum of all oppositision attacks
+         * opp MUST be the sum of all oppositision attacks
          * and teammates
          */
         let mut valid_moves = Vec::<Pieces>::new();
@@ -36,7 +36,7 @@ impl Piece for King {
 
         let mut validate = |test: &u128| {
             if test & MASK == 0 { return; }
-            if test & (no_go | opp) != 0 { return; }
+            if test & (team | opp) != 0 { return; }
             valid_moves.push(Pieces::King(King { bits: *test | bits, color: *color }));
         };
 

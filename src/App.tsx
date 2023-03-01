@@ -4,7 +4,7 @@ import { Chessboard } from 'react-chessboard';
 import Chess from './chess/chess';
 import SideBar from './components/side-bar.js';
 import useWindowDimensions from './hooks/use-window-dimensions.js';
-    
+
 function App() {
   const _window = useWindowDimensions();
 
@@ -12,7 +12,7 @@ function App() {
   const [turn, setTurn] = useState(false);
 
   function oppTurn() {
-    let gameCopy: Chess = new Chess(game.fen());
+    let gameCopy: Chess = game.copy();
     let moves = gameCopy.moves();
     let i = Math.floor(Math.random() * moves.length);
     console.log(moves[i]);
@@ -28,7 +28,7 @@ function App() {
   }, [turn]);
 
   function onDrop(src: String, dst: String) {
-    let gameCopy: Chess = new Chess(game.fen());
+    let gameCopy: Chess = game.copy();
     try {
       gameCopy.move({
         from: src,

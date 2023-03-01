@@ -20,32 +20,25 @@ fn test_fen() {
 
 #[test]
 fn test_moves() {
-    let game = fen::decode("4k2r/6r1/8/8/8/8/3R4/R3K3 w Qk - 0 1").unwrap();
+    let game = fen::decode("8/1P6/8/4p3/1k4Kn/8/8/8 w - - 0 1").unwrap();
 
-    let mut board: u128 = 0;
+    let mut r = 0u128;
+    let mut x = 0u128;
 
     for p in &game.pieces {
-        board |= p.bits();
+        x |= p.bits();
     }
 
-    print_bits(&board, 'x');
-
-    board = 0;
-
-    for p in &game.moves() {
-        match p {
-            Pieces::King(p) => board |= p.bits(),
-            _ => {},
-        }
+    for m in game.moves() {
+        r |= m.bits();
     }
 
-    print_bits(&board, 'x');
+    print_bits(&x, 'x');
+    print_bits(&r, 'x');
 }
 
 pub fn print_bits(x: &u128, c: char) {
     for i in (-15..=112).rev().step_by(16) { // 0..128 but with rev-step
-    //for i in (0..128).step_by(16) {
-        //for j in (0..8).rev() {
         for j in 0..8 {
             print!("{} ", (x >> (i + j + 8) & 1)
                    .to_string()

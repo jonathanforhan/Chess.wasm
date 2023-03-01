@@ -13,6 +13,10 @@ class Chess {
     init();
   }
 
+  copy() {
+    return new Chess(this._fen);
+  }
+
   fen() {
     return this._fen;
   }
