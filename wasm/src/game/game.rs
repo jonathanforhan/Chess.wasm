@@ -1,6 +1,16 @@
 use std::io::{Result, Error};
 
-use super::pieces::{Color, Piece, Pieces};
+use super::{
+    pieces::{
+        Color,
+        Piece,
+        Pieces
+    },
+    K_CASTLE,
+    k_CASTLE,
+    Q_CASTLE,
+    q_CASTLE,
+};
 
 pub struct Game {
     pub pieces: Vec<Pieces>,
@@ -95,7 +105,7 @@ impl Game {
             },
         }
 
-
+        
 
         /* TODO */
         // if castle tag and not check to do it, add castles
@@ -115,6 +125,24 @@ impl Game {
             if *piece.color() == self.turn {
                 if piece.bits() & mv != 0 {
                     piece.set_bits(&(piece.bits() ^ mv));
+                    let fix_castle = |mut s: String, c: char| {
+                        s.remove(s.find(c).unwrap());
+                        if s.len() == 0 { s = String::from("-"); }
+                        return s;
+                    };
+                    // adjust castling rights
+                    if self.castling.contains('K') && mv & K_CASTLE != 0 {
+                        self.castling = fix_castle(self.castling.clone(), 'K');
+                    }
+                    if self.castling.contains('Q') && mv & Q_CASTLE != 0 {
+                        self.castling = fix_castle(self.castling.clone(), 'Q');
+                    }
+                    if self.castling.contains('k') && mv & k_CASTLE != 0 {
+                        self.castling = fix_castle(self.castling.clone(), 'k');
+                    }
+                    if self.castling.contains('q') && mv & q_CASTLE != 0 {
+                        self.castling = fix_castle(self.castling.clone(), 'q');
+                    }
                 }
             // set captured piece to zero
             } else {
