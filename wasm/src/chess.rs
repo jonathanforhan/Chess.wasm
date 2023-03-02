@@ -55,16 +55,18 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
         Ok(g) => g,
         Err(e) => return Err(JsError::new(&format!("{}", e)))
     };
-    assert!(js_sys::Reflect::has(&obj, &"from".into()).unwrap());
-    assert!(js_sys::Reflect::has(&obj, &"to".into()).unwrap());
-    let from = js_sys::Reflect::get(&obj, &"from".into()).unwrap_throw();
-    let to = js_sys::Reflect::get(&obj, &"to".into()).unwrap_throw();
-    let src = algebraic_to_bits(JsValue::as_string(&from).unwrap_throw()).unwrap_throw();
-    let dst = algebraic_to_bits(JsValue::as_string(&to).unwrap_throw()).unwrap_throw();
 
-    if let Err(e) = game.valid_move(&(src | dst)) {
-        return Err(JsError::new(&format!("{}", e)));
-    }
+    let from = js_sys::Reflect::get(&obj, &"from".into())
+        .map_err(|_| JsError::new("Wasm object access error"))?;
+
+    let to = js_sys::Reflect::get(&obj, &"to".into())
+        .map_err(|_| JsError::new("Wasm object access error"))?;
+
+    let src = algebraic_to_bits(JsValue::as_string(&from)
+        .ok_or_else(|| JsError::new("Move parse error"))?)?;
+
+    let dst = algebraic_to_bits(JsValue::as_string(&to)
+        .ok_or_else(|| JsError::new("Move parse error"))?)?;
 
     const K: u128 = (0x10 << 0x08) | (0x40 << 0x08);
     const Q: u128 = (0x10 << 0x08) | (0x04 << 0x08);
@@ -72,23 +74,26 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
     const k: u128 = (0x10 << 0x78) | (0x40 << 0x78);
     #[allow(non_upper_case_globals)]
     const q: u128 = (0x10 << 0x78) | (0x04 << 0x78);
-    let mv = src | dst;
+    let mut mv = src | dst;
 
     if mv == K && game.castling.contains("K") {
-        game.move_piece(0xf0 << 0x08);
+        mv = 0xf0 << 0x08;
     }
     else if mv == Q && game.castling.contains("Q") {
-        game.move_piece(0x1f << 0x08);
+        mv = 0x1f << 0x08;
     }
     else if mv == k && game.castling.contains("k") {
-        game.move_piece(0xf0 << 0x78);
+        mv = 0xf0 << 0x78;
     }
     else if mv == q && game.castling.contains("q") {
-        game.move_piece(0x1f << 0x78);
+        mv = 0x1f << 0x78;
     }
-    else {
-        game.move_piece(src | dst)
+
+    if let Err(e) = game.valid_move(&(mv)) {
+        return Err(JsError::new(&format!("{}", e)));
     }
+
+    game.move_piece(mv);
 
     let return_fen: String = match fen::encode(&game) {
         Ok(f) => f,

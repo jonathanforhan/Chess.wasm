@@ -2,13 +2,19 @@ use super::{Piece, Pieces, Color};
 use crate::MASK;
 
 pub struct King {
-    pub bits: u128,
-    pub color: Color,
+    bits: u128,
+    color: Color,
 }
 
 impl King {
     pub fn new(x: usize, y: usize, color: Color) -> Self {
         King { bits: 1 << (y << 4) + 8 + x, color }
+    }
+
+    // from-bits exists for faster creation like castling and promotions
+    // this is to speed up move gen
+    pub fn from_bits(bits: u128, color: Color) -> Self {
+        King { bits, color }
     }
 }
 

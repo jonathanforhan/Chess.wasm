@@ -7,10 +7,7 @@ use super::{
         Pieces,
         King
     },
-    K_CASTLE,
-    k_CASTLE,
-    Q_CASTLE,
-    q_CASTLE,
+    castle,
 };
 
 pub struct Game {
@@ -98,17 +95,17 @@ impl Game {
                     moves.append(&mut k.moves(&black_attacks, &white_pieces));
                 }
                 if self.castling.contains('K') {
-                    const CASTLE: u128 = 0xf0 << 0x08;
+                    const CASTLE: u128 = 0xf0 << 0x08; // K_ZONE now @refactor
                     const VALID: u128 = 0x60 << 0x08;
                     if VALID & (black_attacks | black_pieces | white_pieces) == 0 {
-                        moves.push(Pieces::King(King { bits: CASTLE, color: Color::White }));
+                        moves.push(Pieces::King(King::from_bits(CASTLE, Color::White)));
                     }
                 }
                 if self.castling.contains('Q') {
                     const CASTLE: u128 = 0x1f << 0x08;
                     const VALID: u128 = 0x0e << 0x08;
                     if VALID & (black_attacks | black_pieces | white_pieces) == 0 {
-                        moves.push(Pieces::King(King { bits: CASTLE, color: Color::White }));
+                        moves.push(Pieces::King(King::from_bits(CASTLE, Color::White)));
                     }
                 }
             },
@@ -121,7 +118,7 @@ impl Game {
                     const CASTLE: u128 = 0xf0 << 0x78;
                     const VALID: u128 = 0x60 << 0x78;
                     if VALID & (white_attacks | white_pieces | black_pieces) == 0 {
-                        moves.push(Pieces::King(King { bits: CASTLE, color: Color::Black }));
+                        moves.push(Pieces::King(King::from_bits(CASTLE, Color::Black)));
                     }
                 }
                 if self.castling.contains('q') {
@@ -129,17 +126,19 @@ impl Game {
                     const CASTLE: u128 = 0x1f << 0x78;
                     const VALID: u128 = 0x0e << 0x78;
                     if VALID & (white_attacks | white_pieces | black_pieces) == 0 {
-                        moves.push(Pieces::King(King { bits: CASTLE, color: Color::Black }));
+                        moves.push(Pieces::King(King::from_bits(CASTLE, Color::Black)));
                     }
                 }
             },
         }
 
         /* TODO */
+        // @Refactor! getting a little spaghettified
         // if enpassant doable, add it
         // find enpassant with <, > because black will always be greater
         // than half of u128_MAX
         // add pawn promotion
+        // Check detection
 
         return moves;
     }
@@ -157,15 +156,6 @@ impl Game {
     //}
 
     pub fn move_piece(&mut self, mv: u128) {
-        const O_O: u128 = 0xf0 << 0x08;
-        const O_O_O: u128 = 0x1f << 0x08;
-        #[allow(non_upper_case_globals)]
-        const o_o: u128 = 0xf0 << 0x78;
-        #[allow(non_upper_case_globals)]
-        const o_o_o: u128 = 0x1f << 0x78;
-
-        /* TODO major problems with castling */
-
         let mut removed: Vec::<usize> = Vec::new();
         // create boards
         for (i, piece) in self.pieces.iter_mut().enumerate() {
@@ -174,40 +164,36 @@ impl Game {
                 if piece.bits() & mv != 0 {
                     #[allow(non_upper_case_globals)]
                     match mv {
-                        O_O => {
+                        castle::K_ZONE => {
                             if let Pieces::King(k) = piece {
-                                let b = (0x10 << 0x08) | (0x40 << 0x08);
-                                k.set_bits(&(k.bits() ^ b));
+                                k.set_bits(&(k.bits() ^ castle::K_MOVE));
                             } else if let Pieces::Rook(r) = piece {
-                                let b = (0x20 << 0x08) | (0x80 << 0x08);
-                                r.set_bits(&(r.bits() ^ b));
+                                const ROOK_MOVE: u128 = 0xa0 << 0x08;
+                                r.set_bits(&(r.bits() ^ ROOK_MOVE));
                             }
                         },
-                        O_O_O => {
+                        castle::Q_ZONE => {
                             if let Pieces::King(k) = piece {
-                                let b = (0x10 << 0x08) | (0x04 << 0x08);
-                                k.set_bits(&(k.bits() ^ b));
+                                k.set_bits(&(k.bits() ^ castle::Q_MOVE));
                             } else if let Pieces::Rook(r) = piece {
-                                let b = (0x08 << 0x08) | (0x01 << 0x08);
-                                r.set_bits(&(r.bits() ^ b));
+                                const ROOK_MOVE: u128 = 0x09 << 0x08;
+                                r.set_bits(&(r.bits() ^ ROOK_MOVE));
                             }
                         },
-                        o_o => {
+                        castle::k_ZONE => {
                             if let Pieces::King(k) = piece {
-                                let b = (0x10 << 0x78) | (0x40 << 0x78);
-                                k.set_bits(&(k.bits() ^ b));
+                                k.set_bits(&(k.bits() ^ castle::k_MOVE));
                             } else if let Pieces::Rook(r) = piece {
-                                let b = (0x20 << 0x78) | (0x80 << 0x78);
-                                r.set_bits(&(r.bits() ^ b));
+                                const ROOK_MOVE: u128 = 0xa0 << 0x78;
+                                r.set_bits(&(r.bits() ^ ROOK_MOVE));
                             }
                         },
-                        o_o_o => {
+                        castle::q_ZONE => {
                             if let Pieces::King(k) = piece {
-                                let b = (0x10 << 0x78) | (0x04 << 0x78);
-                                k.set_bits(&(k.bits() ^ b));
+                                k.set_bits(&(k.bits() ^ castle::q_MOVE));
                             } else if let Pieces::Rook(r) = piece {
-                                let b = (0x08 << 0x78) | (0x01 << 0x78);
-                                r.set_bits(&(r.bits() ^ b));
+                                const ROOK_MOVE: u128 = 0x09 << 0x78;
+                                r.set_bits(&(r.bits() ^ ROOK_MOVE));
                             }
                         },
                         _ => piece.set_bits(&(piece.bits() ^ mv))
@@ -219,16 +205,16 @@ impl Game {
                         return s;
                     };
                     // adjust castling rights
-                    if self.castling.contains('K') && mv & K_CASTLE != 0 {
+                    if self.castling.contains('K') && mv & castle::K_SQUARES != 0 {
                         self.castling = fix_castle(self.castling.clone(), 'K');
                     }
-                    if self.castling.contains('Q') && mv & Q_CASTLE != 0 {
+                    if self.castling.contains('Q') && mv & castle::Q_SQUARES != 0 {
                         self.castling = fix_castle(self.castling.clone(), 'Q');
                     }
-                    if self.castling.contains('k') && mv & k_CASTLE != 0 {
+                    if self.castling.contains('k') && mv & castle::k_SQUARES != 0 {
                         self.castling = fix_castle(self.castling.clone(), 'k');
                     }
-                    if self.castling.contains('q') && mv & q_CASTLE != 0 {
+                    if self.castling.contains('q') && mv & castle::q_SQUARES != 0 {
                         self.castling = fix_castle(self.castling.clone(), 'q');
                     }
                 }
@@ -253,7 +239,7 @@ impl Game {
 
     pub fn valid_move(&self, mv: &u128) -> Result<()> {
         for m in &self.moves() {
-            if m.bits() & mv == *mv {
+            if m.bits() ^ mv == 0 {
                 return Ok(())
             }
         }
