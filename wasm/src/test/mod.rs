@@ -20,21 +20,17 @@ fn test_fen() {
 
 #[test]
 fn test_moves() {
-    let game = fen::decode("8/1P6/8/4p3/1k4Kn/8/8/8 w - - 0 1").unwrap();
+    let game = fen::decode("4k2r/6r1/8/8/8/8/3R4/R3K3 b Qk - 0 1").unwrap();
 
-    let mut r = 0u128;
-    let mut x = 0u128;
+    let mut g = 0u128;
+    let mut w = 0u128;
+    let mut b = 0u128;
 
-    for p in &game.pieces {
-        x |= p.bits();
+    let m = game.moves();
+
+    for mv in m {
+        print_bits(&mv.bits(), 'x');
     }
-
-    for m in game.moves() {
-        r |= m.bits();
-    }
-
-    print_bits(&x, 'x');
-    print_bits(&r, 'x');
 }
 
 pub fn print_bits(x: &u128, c: char) {

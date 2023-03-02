@@ -38,11 +38,11 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
     for m in mvs {
         let src = current & m.bits(); // find the matching starting location
         let dst = m.bits() ^ src;     // subtract starting pos from move map
-        let from = bits_to_algebraic(&src);
-        let to = bits_to_algebraic(&dst);
+
+        let (from, to) = (bits_to_algebraic(&src)?, bits_to_algebraic(&dst)?);
         let obj = js_sys::Object::new();
-        js_sys::Reflect::set(&obj, &"from".into(), &JsValue::from_str(&from.unwrap_throw())).unwrap_throw();
-        js_sys::Reflect::set(&obj, &"to".into(), &JsValue::from_str(&to.unwrap_throw())).unwrap_throw();
+        js_sys::Reflect::set(&obj, &"from".into(), &JsValue::from_str(&from)).unwrap_throw();
+        js_sys::Reflect::set(&obj, &"to".into(), &JsValue::from_str(&to)).unwrap_throw();
         arr.push(&obj);
     }
 
@@ -65,7 +65,30 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
     if let Err(e) = game.valid_move(&(src | dst)) {
         return Err(JsError::new(&format!("{}", e)));
     }
-    game.move_piece(src | dst);
+
+    const K: u128 = (0x10 << 0x08) | (0x40 << 0x08);
+    const Q: u128 = (0x10 << 0x08) | (0x04 << 0x08);
+    #[allow(non_upper_case_globals)]
+    const k: u128 = (0x10 << 0x78) | (0x40 << 0x78);
+    #[allow(non_upper_case_globals)]
+    const q: u128 = (0x10 << 0x78) | (0x04 << 0x78);
+    let mv = src | dst;
+
+    if mv == K && game.castling.contains("K") {
+        game.move_piece(0xf0 << 0x08);
+    }
+    else if mv == Q && game.castling.contains("Q") {
+        game.move_piece(0x1f << 0x08);
+    }
+    else if mv == k && game.castling.contains("k") {
+        game.move_piece(0xf0 << 0x78);
+    }
+    else if mv == q && game.castling.contains("q") {
+        game.move_piece(0x1f << 0x78);
+    }
+    else {
+        game.move_piece(src | dst)
+    }
 
     let return_fen: String = match fen::encode(&game) {
         Ok(f) => f,

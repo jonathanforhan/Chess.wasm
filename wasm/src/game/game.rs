@@ -4,7 +4,8 @@ use super::{
     pieces::{
         Color,
         Piece,
-        Pieces
+        Pieces,
+        King
     },
     K_CASTLE,
     k_CASTLE,
@@ -39,8 +40,7 @@ impl Game {
         let mut king_moves: Vec<&Pieces> = Vec::new();
         let (mut white_attacks, mut black_attacks): (u128, u128) = (0, 0);
         let (mut white_pieces,  mut black_pieces):  (u128, u128) = (0, 0);
-
-
+        
 
         // create boards
         for piece in &self.pieces {
@@ -97,18 +97,45 @@ impl Game {
                 for k in king_moves {
                     moves.append(&mut k.moves(&black_attacks, &white_pieces));
                 }
+                if self.castling.contains('K') {
+                    const CASTLE: u128 = 0xf0 << 0x08;
+                    const VALID: u128 = 0x60 << 0x08;
+                    if VALID & (black_attacks | black_pieces | white_pieces) == 0 {
+                        moves.push(Pieces::King(King { bits: CASTLE, color: Color::White }));
+                    }
+                }
+                if self.castling.contains('Q') {
+                    const CASTLE: u128 = 0x1f << 0x08;
+                    const VALID: u128 = 0x0e << 0x08;
+                    if VALID & (black_attacks | black_pieces | white_pieces) == 0 {
+                        moves.push(Pieces::King(King { bits: CASTLE, color: Color::White }));
+                    }
+                }
             },
             Color::Black => {
                 for k in king_moves {
                     moves.append(&mut k.moves(&white_attacks, &black_pieces));
                 }
+                if self.castling.contains('k') {
+                    #[allow(non_upper_case_globals)]
+                    const CASTLE: u128 = 0xf0 << 0x78;
+                    const VALID: u128 = 0x60 << 0x78;
+                    if VALID & (white_attacks | white_pieces | black_pieces) == 0 {
+                        moves.push(Pieces::King(King { bits: CASTLE, color: Color::Black }));
+                    }
+                }
+                if self.castling.contains('q') {
+                    #[allow(non_upper_case_globals)]
+                    const CASTLE: u128 = 0x1f << 0x78;
+                    const VALID: u128 = 0x0e << 0x78;
+                    if VALID & (white_attacks | white_pieces | black_pieces) == 0 {
+                        moves.push(Pieces::King(King { bits: CASTLE, color: Color::Black }));
+                    }
+                }
             },
         }
 
-        
-
         /* TODO */
-        // if castle tag and not check to do it, add castles
         // if enpassant doable, add it
         // find enpassant with <, > because black will always be greater
         // than half of u128_MAX
@@ -117,14 +144,75 @@ impl Game {
         return moves;
     }
 
+    //fn gen_attacks() -> Vec<Pieces> {
+        //
+    //}
+//
+    //fn gen_castle() -> Vec<Pieces> {
+        //
+    //}
+//
+    //fn gen_en_passant() -> Vec<Pieces> {
+        //
+    //}
+
     pub fn move_piece(&mut self, mv: u128) {
+        const O_O: u128 = 0xf0 << 0x08;
+        const O_O_O: u128 = 0x1f << 0x08;
+        #[allow(non_upper_case_globals)]
+        const o_o: u128 = 0xf0 << 0x78;
+        #[allow(non_upper_case_globals)]
+        const o_o_o: u128 = 0x1f << 0x78;
+
+        /* TODO major problems with castling */
+
         let mut removed: Vec::<usize> = Vec::new();
         // create boards
         for (i, piece) in self.pieces.iter_mut().enumerate() {
             // move the colors piece
             if *piece.color() == self.turn {
                 if piece.bits() & mv != 0 {
-                    piece.set_bits(&(piece.bits() ^ mv));
+                    #[allow(non_upper_case_globals)]
+                    match mv {
+                        O_O => {
+                            if let Pieces::King(k) = piece {
+                                let b = (0x10 << 0x08) | (0x40 << 0x08);
+                                k.set_bits(&(k.bits() ^ b));
+                            } else if let Pieces::Rook(r) = piece {
+                                let b = (0x20 << 0x08) | (0x80 << 0x08);
+                                r.set_bits(&(r.bits() ^ b));
+                            }
+                        },
+                        O_O_O => {
+                            if let Pieces::King(k) = piece {
+                                let b = (0x10 << 0x08) | (0x04 << 0x08);
+                                k.set_bits(&(k.bits() ^ b));
+                            } else if let Pieces::Rook(r) = piece {
+                                let b = (0x08 << 0x08) | (0x01 << 0x08);
+                                r.set_bits(&(r.bits() ^ b));
+                            }
+                        },
+                        o_o => {
+                            if let Pieces::King(k) = piece {
+                                let b = (0x10 << 0x78) | (0x40 << 0x78);
+                                k.set_bits(&(k.bits() ^ b));
+                            } else if let Pieces::Rook(r) = piece {
+                                let b = (0x20 << 0x78) | (0x80 << 0x78);
+                                r.set_bits(&(r.bits() ^ b));
+                            }
+                        },
+                        o_o_o => {
+                            if let Pieces::King(k) = piece {
+                                let b = (0x10 << 0x78) | (0x04 << 0x78);
+                                k.set_bits(&(k.bits() ^ b));
+                            } else if let Pieces::Rook(r) = piece {
+                                let b = (0x08 << 0x78) | (0x01 << 0x78);
+                                r.set_bits(&(r.bits() ^ b));
+                            }
+                        },
+                        _ => piece.set_bits(&(piece.bits() ^ mv))
+                    };
+
                     let fix_castle = |mut s: String, c: char| {
                         s.remove(s.find(c).unwrap());
                         if s.len() == 0 { s = String::from("-"); }

@@ -2,8 +2,8 @@ use super::{Piece, Pieces, Color};
 use crate::MASK;
 
 pub struct King {
-    bits: u128,
-    color: Color,
+    pub bits: u128,
+    pub color: Color,
 }
 
 impl King {

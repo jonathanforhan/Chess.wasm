@@ -27,6 +27,6 @@ pub fn algebraic_to_bits<'a>(s: String) -> Result<u128, NotationError<'a>> {
         Ok(y) => y - 1,
         Err(_) => { return Err(NotationError{ error: "Invalid Notation" }) },
     };
-    
+
     Ok(1 << (y << 4) + 8 + x)
 }
