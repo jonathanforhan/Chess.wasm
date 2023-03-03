@@ -1,6 +1,8 @@
 use wasm_bindgen::prelude::*;
 use js_sys;
 
+use crate::game::castle;
+
 use super::game::{
     Game,
     pieces::Piece,
@@ -68,25 +70,19 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
     let dst = algebraic_to_bits(JsValue::as_string(&to)
         .ok_or_else(|| JsError::new("Move parse error"))?)?;
 
-    const K: u128 = (0x10 << 0x08) | (0x40 << 0x08);
-    const Q: u128 = (0x10 << 0x08) | (0x04 << 0x08);
-    #[allow(non_upper_case_globals)]
-    const k: u128 = (0x10 << 0x78) | (0x40 << 0x78);
-    #[allow(non_upper_case_globals)]
-    const q: u128 = (0x10 << 0x78) | (0x04 << 0x78);
     let mut mv = src | dst;
 
-    if mv == K && game.castling.contains("K") {
-        mv = 0xf0 << 0x08;
+    if mv == castle::K_MOVE && game.castling.contains("K") {
+        mv = castle::K_ZONE;
     }
-    else if mv == Q && game.castling.contains("Q") {
-        mv = 0x1f << 0x08;
+    else if mv == castle::Q_MOVE && game.castling.contains("Q") {
+        mv = castle::Q_ZONE;
     }
-    else if mv == k && game.castling.contains("k") {
-        mv = 0xf0 << 0x78;
+    else if mv == castle::k_MOVE && game.castling.contains("k") {
+        mv = castle::k_ZONE;
     }
-    else if mv == q && game.castling.contains("q") {
-        mv = 0x1f << 0x78;
+    else if mv == castle::q_MOVE && game.castling.contains("q") {
+        mv = castle::q_ZONE;
     }
 
     if let Err(e) = game.valid_move(&(mv)) {
