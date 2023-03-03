@@ -8,7 +8,7 @@ import useWindowDimensions from './hooks/use-window-dimensions.js';
 function App() {
   const _window = useWindowDimensions();
 
-  const [game, setGame] = useState(new Chess(""));
+  const [game, setGame] = useState(new Chess("start"));
   const [turn, setTurn] = useState(false);
 
   function oppTurn() {
@@ -34,6 +34,7 @@ function App() {
         from: src,
         to: dst,
       });
+      console.log(src, dst)
     } catch(e) {
       console.log(e)
       return false;
