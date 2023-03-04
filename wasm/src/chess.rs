@@ -29,9 +29,7 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
     };
     let mut current: u128 = 0;
     for p in &game.pieces {
-        if p.color() == &game.turn {
-            current |= p.bits();
-        }
+        if p.color() == &game.turn { current |= p.bits(); }
     }
 
     let arr = js_sys::Array::new();
@@ -41,10 +39,16 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
         let src = current & m.bits(); // find the matching starting location
         let dst = m.bits() ^ src;     // subtract starting pos from move map
 
+        // Convert bits to string
         let (from, to) = (bits_to_algebraic(&src)?, bits_to_algebraic(&dst)?);
         let obj = js_sys::Object::new();
-        js_sys::Reflect::set(&obj, &"from".into(), &JsValue::from_str(&from)).unwrap_throw();
-        js_sys::Reflect::set(&obj, &"to".into(), &JsValue::from_str(&to)).unwrap_throw();
+
+        // Wrap in JS object
+        js_sys::Reflect::set(&obj, &"from".into(), &JsValue::from_str(&from))
+            .map_err(|_| JsError::new("Wasm object access error"))?;
+        js_sys::Reflect::set(&obj, &"to".into(), &JsValue::from_str(&to))
+            .map_err(|_| JsError::new("Wasm object access error"))?;
+
         arr.push(&obj);
     }
 
@@ -58,6 +62,7 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
         Err(e) => return Err(JsError::new(&format!("{}", e)))
     };
 
+    // Unwrap JS object to rust data-type
     let from = js_sys::Reflect::get(&obj, &"from".into())
         .map_err(|_| JsError::new("Wasm object access error"))?;
 
@@ -72,6 +77,7 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
 
     let mut mv = src | dst;
 
+    // Check castle move
     if mv == castle::K_MOVE && game.castling.contains("K") {
         mv = castle::K_ZONE;
     }
@@ -85,12 +91,15 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
         mv = castle::q_ZONE;
     }
 
+    // Validate move
     if let Err(e) = game.valid_move(&(mv)) {
         return Err(JsError::new(&format!("{}", e)));
     }
 
+    // Execute move
     game.move_piece(mv);
 
+    // Return new fen
     let return_fen: String = match fen::encode(&game) {
         Ok(f) => f,
         Err(e) => return Err(JsError::new(&format!("{}", e)))

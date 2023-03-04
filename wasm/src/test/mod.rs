@@ -22,15 +22,29 @@ fn test_fen() {
 fn test_moves() {
     let game = fen::decode("4k2r/6r1/8/8/8/8/3R4/R3K3 b Qk - 0 1").unwrap();
 
-    let mut g = 0u128;
-    let mut w = 0u128;
-    let mut b = 0u128;
-
     let m = game.moves();
 
     for mv in m {
         print_bits(&mv.bits(), 'x');
     }
+}
+
+#[test]
+fn test_en_passant() {
+    let mut game = fen::decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+
+    let src = algebraic_to_bits("a2".into()).unwrap();
+    let dst = algebraic_to_bits("a4".into()).unwrap();
+
+    game.move_piece(src | dst);
+
+    let (mut w, mut b) = (0u128, 0u128);
+
+    game.init_boards(&mut w, &mut b);
+
+    print_bits(&(w | b), 'x');
+    print_bits(&game.en_passant_square, 'e');
+    println!("{}", bits_to_algebraic(&game.en_passant_square).unwrap());
 }
 
 pub fn print_bits(x: &u128, c: char) {

@@ -39,7 +39,10 @@ impl Game {
         let (mut white_pieces,  mut black_pieces):  (u128, u128) = (0, 0);
         self.init_boards(&mut white_pieces, &mut black_pieces);
 
-        // add moves, delay king moves
+        /* Add moves, save king moves to be evaluated later
+         * King moves can only be determined once opposition
+         * attacks are known to prevent moving into check
+         */
         for piece in &self.pieces {
             if self.turn == Color::White {
                 match (piece, piece.color()) {
@@ -78,8 +81,11 @@ impl Game {
                     }
                 }
             } // endif
-        } // end for loop
+        } // end for-loop
 
+        /* Can now determine king moves and castling
+         * castling moves are wrapped in king struct
+         */
         match &self.turn {
             Color::White => {
                 // ensure white does not move into check
@@ -112,7 +118,7 @@ impl Game {
                     }
                 }
             },
-        }
+        } // end match
 
         /* TODO */
         // if enpassant doable, add it
@@ -124,7 +130,7 @@ impl Game {
         return moves;
     }
 
-    fn init_boards(&self, white_pieces: &mut u128, black_pieces: &mut u128) {
+    pub fn init_boards(&self, white_pieces: &mut u128, black_pieces: &mut u128) {
         for piece in &self.pieces {
             match piece.color() {
                 Color::White => *white_pieces |= piece.bits(),
@@ -150,9 +156,39 @@ impl Game {
             return s;
         };
 
+        let check_en_passant = |mv: &u128| -> Option<u128> {
+            const WHITE_EN_PASSANT: u128 = 0xff00 << 0x10 | 0xff00 << 0x30;
+            const BLACK_EN_PASSANT: u128 = 0xff00 << 0x60 | 0xff00 << 0x40;
+            
+            match self.turn {
+                Color::White => {
+                    if mv & WHITE_EN_PASSANT == *mv {
+                        let en_passant = mv & (0xff00 << 0x10);
+                        return Some(en_passant << 0x10);
+                    }
+                },
+                Color::Black => {
+                    if mv & BLACK_EN_PASSANT == *mv {
+                        let en_passant = mv & (0xff00 << 0x60);
+                        return Some(en_passant >> 0x10);
+                    }
+                },
+            }
+            return None;
+        };
+
+        self.en_passant_square = 0x0; // reset
         for (i, piece) in self.pieces.iter_mut().enumerate() {
             // move the colors piece
             if *piece.color() == self.turn && piece.bits() & mv != 0 {
+                // if pawn move and is en passant, add en passant
+                // execute move and return
+                if let Pieces::Pawn(_) = piece {
+                    if let Some(ep) = check_en_passant(&mv) {
+                        self.en_passant_square = ep;
+                    }
+                };
+
                 match mv {
                     castle::K_ZONE => try_castle(piece, castle::K_MOVE, castle::K_ROOK),
                     castle::Q_ZONE => try_castle(piece, castle::Q_MOVE, castle::Q_ROOK),
@@ -183,7 +219,9 @@ impl Game {
             }
         } // end for loop
 
-        for i in &removed { self.pieces.remove(*i); } // remove any captured or promoted pieces
+        // remove any captured or promoted pieces
+        for i in &removed { self.pieces.remove(*i); }
+        // adjust half moves to reflect turn
         if removed.len() > 0 { self.half_moves = 0; } else { self.half_moves += 1; }
 
         if self.turn == Color::White {
