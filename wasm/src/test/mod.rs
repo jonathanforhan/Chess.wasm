@@ -20,7 +20,7 @@ fn test_fen() {
 
 #[test]
 fn test_moves() {
-    let game = fen::decode("4k2r/6r1/8/8/8/8/3R4/R3K3 b Qk - 0 1").unwrap();
+    let game = fen::decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w kq - 0 1").unwrap();
 
     let m = game.moves();
 

@@ -23,7 +23,7 @@ pub fn encode<'a>(game: &Game) -> Result<String, FenError<'a>> {
     let mut board: Vec<Vec<char>> = vec![vec!['.'; 8]; 8];
 
     for p in game.pieces.iter() {
-        let xy = pos(*p.bits()).unwrap();
+        let xy = pos(*p.bits()).ok_or_else(|| FenError { error: "Invalid bit boards" })?;
         match p {
             Pieces::Pawn(p) => {
                 if *p.color() == Color::White { board[xy.1][xy.0] = 'P'; }

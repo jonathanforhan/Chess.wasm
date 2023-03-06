@@ -34,9 +34,13 @@ impl Game {
     pub fn moves(&self) -> Vec<Pieces> {
         let mut moves: Vec<Pieces> = Vec::new();
 
-        let mut king_moves: Vec<&Pieces> = Vec::new();
+        // throw away values
+        let mut king: &Pieces = &Pieces::King(King::from_bits(0x0001, Color::White));
+
         let (mut white_attacks, mut black_attacks): (u128, u128) = (0, 0);
         let (mut white_pieces,  mut black_pieces):  (u128, u128) = (0, 0);
+        let mut check = false;
+
         self.init_boards(&mut white_pieces, &mut black_pieces);
 
         /* Add moves, save king moves to be evaluated later
@@ -47,8 +51,10 @@ impl Game {
             if self.turn == Color::White {
                 match (piece, piece.color()) {
                     (Pieces::King(_), Color::White) => {
-                        // not enough info to process king moves so we save them
-                        king_moves.push(piece)
+                        king = piece;
+                    },
+                    (Pieces::Pawn(_), Color:: White) => {
+                        moves.append(&mut piece.moves(&(black_pieces | self.en_passant_square), &white_pieces));
                     },
                     (_, Color::White) => { 
                         moves.append(&mut piece.moves(&black_pieces, &white_pieces))
@@ -66,7 +72,10 @@ impl Game {
             } else { // black move
                 match (piece, piece.color()) {
                     (Pieces::King(_), Color::Black) => {
-                        king_moves.push(piece)
+                        king = piece;
+                    },
+                    (Pieces::Pawn(_), Color:: Black) => {
+                        moves.append(&mut piece.moves(&(white_pieces | self.en_passant_square), &black_pieces));
                     },
                     (_, Color::Black) => {
                         moves.append(&mut piece.moves(&white_pieces, &black_pieces))
@@ -83,15 +92,19 @@ impl Game {
             } // endif
         } // end for-loop
 
-        /* Can now determine king moves and castling
+        /* Determine king moves and castling
          * castling moves are wrapped in king struct
+         * if check on king break loop and report only the king moves to escape
          */
         match &self.turn {
             Color::White => {
-                // ensure white does not move into check
-                for k in king_moves {
-                    moves.append(&mut k.moves(&black_attacks, &white_pieces));
+                // if check return only valid kingmoves
+                if black_attacks & king.bits()  != 0 {
+                    return king.moves(&black_attacks, &white_pieces);
                 }
+                // comparing against black attacks allows to not move into check
+                moves.append(&mut king.moves(&black_attacks, &white_pieces));
+
                 if self.castling.contains('K') {
                     if castle::K_VALID & (black_attacks | black_pieces | white_pieces) == 0 {
                         moves.push(Pieces::King(King::from_bits(castle::K_ZONE, Color::White)));
@@ -104,9 +117,11 @@ impl Game {
                 }
             },
             Color::Black => {
-                for k in king_moves {
-                    moves.append(&mut k.moves(&white_attacks, &black_pieces));
+                if white_attacks & king.bits()  != 0 {
+                    return king.moves(&white_attacks, &black_pieces);
                 }
+                moves.append(&mut king.moves(&white_attacks, &black_pieces));
+
                 if self.castling.contains('k') {
                     if castle::k_VALID & (white_attacks | white_pieces | black_pieces) == 0 {
                         moves.push(Pieces::King(King::from_bits(castle::k_ZONE, Color::Black)));
@@ -121,9 +136,6 @@ impl Game {
         } // end match
 
         /* TODO */
-        // if enpassant doable, add it
-        // find enpassant with <, > because black will always be greater
-        // than half of u128_MAX
         // add pawn promotion
         // Check detection
 
@@ -150,44 +162,38 @@ impl Game {
             }
         };
 
-        let fix_castle = |mut s: String, c: char| {
-            s.remove(s.find(c).unwrap());
-            if s.len() == 0 { s = String::from("-"); }
-            return s;
-        };
-
-        let check_en_passant = |mv: &u128| -> Option<u128> {
+        let add_en_passant = |mv: &u128| -> Option<u128> {
             const WHITE_EN_PASSANT: u128 = 0xff00 << 0x10 | 0xff00 << 0x30;
             const BLACK_EN_PASSANT: u128 = 0xff00 << 0x60 | 0xff00 << 0x40;
-            
-            match self.turn {
-                Color::White => {
-                    if mv & WHITE_EN_PASSANT == *mv {
-                        let en_passant = mv & (0xff00 << 0x10);
-                        return Some(en_passant << 0x10);
-                    }
-                },
-                Color::Black => {
-                    if mv & BLACK_EN_PASSANT == *mv {
-                        let en_passant = mv & (0xff00 << 0x60);
-                        return Some(en_passant >> 0x10);
-                    }
-                },
+
+            if mv & WHITE_EN_PASSANT == *mv {
+                let en_passant = mv & (0xff00 << 0x10);
+                return Some(en_passant << 0x10);
+            }
+            else if mv & BLACK_EN_PASSANT == *mv {
+                let en_passant = mv & (0xff00 << 0x60);
+                return Some(en_passant >> 0x10);
             }
             return None;
         };
 
-        self.en_passant_square = 0x0; // reset
+        // en passant handlers
+        let mut ep_this_turn = false;
+        let mut ep_detect = 0; // ensures two pawns moved for ep to be valid
+        let mut ep_remove: usize = 64;
         for (i, piece) in self.pieces.iter_mut().enumerate() {
             // move the colors piece
             if *piece.color() == self.turn && piece.bits() & mv != 0 {
-                // if pawn move and is en passant, add en passant
-                // execute move and return
+                // if pawn move and is en passant, add en passant,
                 if let Pieces::Pawn(_) = piece {
-                    if let Some(ep) = check_en_passant(&mv) {
+                    ep_detect += 1;
+                    // add en passant
+                    if let Some(ep) = add_en_passant(&mv) {
                         self.en_passant_square = ep;
+                        ep_this_turn = true;
+                    // attack enemy en apssant
                     }
-                };
+                } // end if-let
 
                 match mv {
                     castle::K_ZONE => try_castle(piece, castle::K_MOVE, castle::K_ROOK),
@@ -197,27 +203,51 @@ impl Game {
                     _ => piece.set_bits(&(piece.bits() ^ mv))
                 };
 
-                if self.castling == "-" { continue; } // guard pointless checks
-                // adjust castling rights
-                if self.castling.contains('K') && mv & castle::K_SQUARES != 0 {
-                    self.castling = fix_castle(self.castling.clone(), 'K');
-                }
-                if self.castling.contains('Q') && mv & castle::Q_SQUARES != 0 {
-                    self.castling = fix_castle(self.castling.clone(), 'Q');
-                }
-                if self.castling.contains('k') && mv & castle::k_SQUARES != 0 {
-                    self.castling = fix_castle(self.castling.clone(), 'k');
-                }
-                if self.castling.contains('q') && mv & castle::q_SQUARES != 0 {
-                    self.castling = fix_castle(self.castling.clone(), 'q');
-                }
+                // guard pointless checks
+                if self.castling == "-" { continue; }
+                // fix castle rights
+                let mut fix_castle = |c: char, castle: u128| {
+                    if self.castling.contains(c) && mv & castle != 0 {
+                        let mut s = self.castling.clone();
+                        s.remove(s.find(c).unwrap());
+                        if s.len() == 0 { s = String::from("-"); }
+                        self.castling = s;
+                    }
+                };
+                fix_castle('K', castle::K_SQUARES);
+                fix_castle('Q', castle::Q_SQUARES);
+                fix_castle('k', castle::k_SQUARES);
+                fix_castle('q', castle::q_SQUARES);
+                continue;
             }
             // add empty boards to trash list
             // added by index for easy removal
             else if piece.bits() & !mv == 0 {
                 removed.push(i);
             }
+            else if let Pieces::Pawn(_) = piece {
+                if !(self.en_passant_square & mv != 0) { continue; }
+                match piece.color() {
+                    Color::White => {
+                        if piece.bits() & (self.en_passant_square << 0x10) != 0 {
+                            ep_detect += 1;
+                            ep_remove = i;
+                        }
+                    },
+                    Color::Black => {
+                        if piece.bits() & (self.en_passant_square >> 0x10) != 0 {
+                            ep_detect += 1;
+                            ep_remove = i;
+                        }
+                    },
+                }
+            }
         } // end for loop
+
+        // if en passant was not added this turn reset it
+        if !ep_this_turn { self.en_passant_square = 0x0; }
+        // if enpassant, remove taken piece
+        if ep_detect == 2 { removed.push(ep_remove); }
 
         // remove any captured or promoted pieces
         for i in &removed { self.pieces.remove(*i); }

@@ -15,10 +15,10 @@ function App() {
     let gameCopy: Chess = game.copy();
     let moves = gameCopy.moves();
     let i = Math.floor(Math.random() * moves.length);
-    console.log(moves[i]);
     console.log(gameCopy.fen())
     gameCopy.move(moves[i]);
     setGame(gameCopy);
+    console.log(gameCopy.fen())
     setTurn(false);
   }
 
@@ -34,7 +34,6 @@ function App() {
         from: src,
         to: dst,
       });
-      console.log(src, dst)
     } catch(e) {
       console.log(e)
       return false;
@@ -52,6 +51,7 @@ function App() {
           <Chessboard
             id='chessBoard'
             position={game.fen()}
+            boardOrientation={'white'}
             onPieceDrop={onDrop}
             arePremovesAllowed={true}
             isDraggablePiece={({ piece }) => piece[0] === "w"}
