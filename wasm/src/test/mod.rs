@@ -20,12 +20,24 @@ fn test_fen() {
 
 #[test]
 fn test_moves() {
-    let game = fen::decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w kq - 0 1").unwrap();
+    let mut game = fen::decode("rnbqk1nr/ppppppbp/8/6p1/8/1QP5/PP1PPPPP/RNB1KBNR w KQkq - 4 3").unwrap();
+    let (mut w, mut b) = (0, 0);
+    game.init_boards(&mut w, &mut b);
 
-    let m = game.moves();
+    print_bits(&(w|b), 'o');
 
-    for mv in m {
-        print_bits(&mv.bits(), 'x');
+    let src = algebraic_to_bits("b3".into()).unwrap();
+    let dst = algebraic_to_bits("f7".into()).unwrap();
+
+    game.move_piece(src | dst);
+
+    let (mut w, mut b) = (0, 0);
+    game.init_boards(&mut w, &mut b);
+    print_bits(&(w|b), 'o');
+
+    let mv = game.moves();
+    for m in mv {
+        print_bits(m.bits(), 'x');
     }
 }
 

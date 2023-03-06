@@ -11,6 +11,10 @@ impl Pawn {
         Pawn { bits: 1 << (y << 4) + 8 + x, color }
     }
 
+    pub fn from_bits(bits: u128, color: Color) -> Self {
+        Pawn { bits, color }
+    }
+
     pub fn attacks(&self) -> Vec<Pieces> {
         let mut attacks: Vec<Pieces> = Vec::new();
         let bits = &self.bits;

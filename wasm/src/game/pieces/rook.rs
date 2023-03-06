@@ -10,6 +10,10 @@ impl Rook {
     pub fn new(x: usize, y: usize, color: Color) -> Self {
         Rook { bits: 1 << (y << 4) + 8 + x, color }
     }
+
+    pub fn from_bits(bits: u128, color: Color) -> Self {
+        Rook { bits, color }
+    }
 }
 
 impl Piece for Rook {
