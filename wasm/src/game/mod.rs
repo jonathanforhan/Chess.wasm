@@ -46,3 +46,27 @@ pub mod castle {
     pub const k_VALID: u128 = 0x60 << 0x78; // .....xx.
     pub const q_VALID: u128 = 0x0e << 0x78; // .xxx....
 }
+
+pub mod promote {
+    // Promotion indicators are tacked onto
+    // pawn promtion moves and used to determine
+    // the desired promtion piece.
+    // No indicator is a Queen promotion
+
+    // White promotion option indicators
+    pub const WHITE_ROOK: u128 = 0x0100;   // x.......
+    pub const WHITE_KNIGHT: u128 = 0x0200; // .x......
+    pub const WHITE_BISHOP: u128 = 0x0400; // ..x.....
+    pub const WHITE_BACK_RANK: u128 = 0xff00 << 0x70;
+
+    // Black promotion option indicators
+    pub const BLACK_ROOK: u128 = 0x0100 << 0x70;   // x.......
+    pub const BLACK_KNIGHT: u128 = 0x0200 << 0x70; // .x......
+    pub const BLACK_BISHOP: u128 = 0x0400 << 0x70; // ..x.....
+    pub const BLACK_BACK_RANK: u128 = 0xff00;
+}
+
+pub mod en_passant {
+    pub const WHITE_EN_PASSANT: u128 = 0xff00 << 0x10 | 0xff00 << 0x30;
+    pub const BLACK_EN_PASSANT: u128 = 0xff00 << 0x60 | 0xff00 << 0x40;
+}

@@ -33,6 +33,7 @@ function App() {
       gameCopy.move({
         from: src,
         to: dst,
+        promotion: ''
       });
     } catch(e) {
       console.log(e)

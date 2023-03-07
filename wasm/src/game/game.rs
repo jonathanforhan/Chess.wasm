@@ -1,18 +1,22 @@
 use std::io::{Result, Error};
 
+use crate::game::{pieces::Queen, promote};
+
 use super::{
     pieces::{
         Color,
+        Color::White,
+        Color::Black,
         Piece,
         Pieces,
         King,
-        Queen,
         Bishop,
         Knight,
         Rook,
         Pawn
     },
     castle,
+    en_passant,
 };
 
 pub struct Game {
@@ -38,223 +42,223 @@ impl Game {
 
     pub fn moves(&self) -> Vec<Pieces> {
         let mut moves: Vec<Pieces> = Vec::new();
-
-        let mut king: Option<&Pieces> = None; // not really optional
+        
+        let mut king: Option<&Pieces> = None;
         let mut check = false;
-
-        let (mut white_attacks, mut black_attacks): (u128, u128) = (0, 0);
-        let (mut white_pieces,  mut black_pieces):  (u128, u128) = (0, 0);
+        let (mut white_attacks, mut black_attacks): (u128, u128) = (0x0, 0x0);
+        let (mut white_pieces,  mut black_pieces):  (u128, u128) = (0x0, 0x0);
 
         self.init_boards(&mut white_pieces, &mut black_pieces);
+
+        let add_white_promotion = |mv: &Pieces, mvs: &mut Vec<Pieces>| {
+            mvs.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | promote::WHITE_ROOK, White)));
+            mvs.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | promote::WHITE_KNIGHT, White)));
+            mvs.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | promote::WHITE_BISHOP, White)));
+        };
+
+        let add_black_promotion = |mv: &Pieces, mvs: &mut Vec<Pieces>| {
+            mvs.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | promote::BLACK_ROOK, Black)));
+            mvs.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | promote::BLACK_KNIGHT, Black)));
+            mvs.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | promote::BLACK_BISHOP, Black)));
+        };
 
         /* Add moves, save king moves to be evaluated later
          * King moves can only be determined once opposition
          * attacks are known to prevent moving into check
          */
         for piece in &self.pieces {
-            if self.turn == Color::White {
-                match (piece, piece.color()) {
-                    (Pieces::King(_), Color::White) => {
-                        king = Some(piece);
-                    },
-                    (Pieces::Pawn(_), Color:: White) => {
-                        moves.append(&mut piece.moves(&(black_pieces | self.en_passant_square), &white_pieces));
-                    },
-                    (_, Color::White) => { 
-                        moves.append(&mut piece.moves(&black_pieces, &white_pieces))
-                    },
-                    (Pieces::Pawn(p), Color::Black) => { 
-                        for a in p.attacks() { black_attacks |= a.bits(); }
-                    },
-                    (_, Color::Black) => {
-                        // must add own pieces to opp to detect check
-                        for m in piece.moves(&(white_pieces | black_pieces), &0u128) {
-                            black_attacks |= m.bits() ^ piece.bits();
+            match (self.turn, piece.color(), piece) {
+                // White turn
+                (White, White, Pieces::King(_)) => {
+                    king = Some(piece);
+                },
+                (White, White, Pieces::Pawn(_)) => {
+                    let mut mvs = piece.moves(&(black_pieces | self.en_passant_square), &white_pieces);
+                    for mv in &mvs {
+                        if mv.bits() & promote::WHITE_BACK_RANK != 0 {
+                            add_white_promotion(mv, &mut moves);
                         }
                     }
-                }
-            } else { // black move
-                match (piece, piece.color()) {
-                    (Pieces::King(_), Color::Black) => {
-                        king = Some(piece);
-                    },
-                    (Pieces::Pawn(_), Color:: Black) => {
-                        moves.append(&mut piece.moves(&(white_pieces | self.en_passant_square), &black_pieces));
-                    },
-                    (_, Color::Black) => {
-                        moves.append(&mut piece.moves(&white_pieces, &black_pieces))
-                    },
-                    (Pieces::Pawn(p), Color::White) => { 
-                        for a in p.attacks() { white_attacks |= a.bits(); }
-                    },
-                    (_, Color::White) => {
-                        for m in piece.moves(&(black_pieces | white_pieces), &0u128) {
-                            white_attacks |= m.bits() ^ piece.bits();
+                    moves.append(&mut mvs);
+                },
+                (White, White, _) => {
+                    moves.append(&mut piece.moves(&black_pieces, &white_pieces))
+                },
+                (White, Black, Pieces::Pawn(p)) => {
+                    for a in p.attacks() { black_attacks |= a.bits(); }
+                },
+                (White, Black, _) => {
+                    // must add own pieces to opp to detect check
+                    for m in piece.moves(&(white_pieces | black_pieces), &0u128) {
+                        black_attacks |= m.bits() ^ piece.bits();
+                    }
+                },
+                // Black turn
+                (Black, Black, Pieces::King(_)) => {
+                    king = Some(piece);
+                },
+                (Black, Black, Pieces::Pawn(_)) => {
+                    let mut mvs = piece.moves(&(white_pieces | self.en_passant_square), &black_pieces);
+                    for mv in &mvs {
+                        if mv.bits() & promote::BLACK_BACK_RANK != 0 {
+                            add_black_promotion(mv, &mut moves);
                         }
                     }
-                }
-            } // endif
+                    moves.append(&mut mvs);
+                },
+                (Black, Black, _) => {
+                    moves.append(&mut piece.moves(&white_pieces, &black_pieces))
+                },
+                (Black, White, Pieces::Pawn(p)) => {
+                    for a in p.attacks() { white_attacks |= a.bits(); }
+                },
+                (Black, White, _) => {
+                    for m in piece.moves(&(black_pieces | white_pieces), &0u128) {
+                        white_attacks |= m.bits() ^ piece.bits();
+                    }
+                },
+            }
         } // end for-loop
-
+        
         /* Determine king moves and castling
          * castling moves are wrapped in king struct
          */
         let king = king.unwrap();
-        match &self.turn {
-            Color::White => {
-                // if check return only valid kingmoves
-                if black_attacks & king.bits() != 0 {
-                    check = true;
-                    moves.clear();
-                }
-                // comparing against black attacks allows to not move into check
-                moves.append(&mut king.moves(&black_attacks, &white_pieces));
+        if self.turn == White {
+            // if check return only valid kingmoves
+            if black_attacks & king.bits() != 0 {
+                check = true;
+                moves.clear();
+            }
+            // comparing against black attacks allows to not move into check
+            moves.append(&mut king.moves(&black_attacks, &white_pieces));
 
-                if !check && self.castling.contains('K') {
-                    if castle::K_VALID & (black_attacks | black_pieces | white_pieces) == 0 {
-                        moves.push(Pieces::King(King::from_bits(castle::K_ZONE, Color::White)));
-                    }
+            if !check && self.castling.contains('K') {
+                if castle::K_VALID & (black_attacks | black_pieces | white_pieces) == 0 {
+                    moves.push(Pieces::King(King::from_bits(castle::K_ZONE, White)));
                 }
-                if !check && self.castling.contains('Q') {
-                    if castle::Q_VALID & (black_attacks | black_pieces | white_pieces) == 0 {
-                        moves.push(Pieces::King(King::from_bits(castle::Q_ZONE, Color::White)));
-                    }
+            }
+            if !check && self.castling.contains('Q') {
+                if castle::Q_VALID & (black_attacks | black_pieces | white_pieces) == 0 {
+                    moves.push(Pieces::King(King::from_bits(castle::Q_ZONE, White)));
                 }
-            },
-            Color::Black => {
-                if white_attacks & king.bits() != 0 {
-                    check = true;
-                    moves.clear();
-                }
-                moves.append(&mut king.moves(&white_attacks, &black_pieces));
+            }
+        } else { // Black
+            if white_attacks & king.bits() != 0 {
+                check = true;
+                moves.clear();
+            }
+            moves.append(&mut king.moves(&white_attacks, &black_pieces));
 
-                if !check && self.castling.contains('k') {
-                    if castle::k_VALID & (white_attacks | white_pieces | black_pieces) == 0 {
-                        moves.push(Pieces::King(King::from_bits(castle::k_ZONE, Color::Black)));
-                    }
+            if !check && self.castling.contains('k') {
+                if castle::k_VALID & (white_attacks | white_pieces | black_pieces) == 0 {
+                    moves.push(Pieces::King(King::from_bits(castle::k_ZONE, Black)));
                 }
-                if !check && self.castling.contains('q') {
-                    if castle::q_VALID & (white_attacks | white_pieces | black_pieces) == 0 {
-                        moves.push(Pieces::King(King::from_bits(castle::q_ZONE, Color::Black)));
-                    }
+            }
+            if !check && self.castling.contains('q') {
+                if castle::q_VALID & (white_attacks | white_pieces | black_pieces) == 0 {
+                    moves.push(Pieces::King(King::from_bits(castle::q_ZONE, Black)));
                 }
-            },
-        } // end match
-    
-        if !check {
-            return moves;
+            }
         }
+
+        if !check { return moves; }
 
         // determine what pieces are putting king under check
         let mut check_attackers: Vec::<&Pieces> = Vec::new();
         let mut check_attack: u128 = 0x0;
         for piece in &self.pieces {
             let mut attack = 0x0;
-            match (self.turn, piece.color()) {
-                (Color::White, Color::Black) => {
-                    for m in piece.moves(&white_pieces, &black_pieces) {
-                        attack |= m.bits();
-                    }
-                    if attack & king.bits() != 0 {
-                        check_attackers.push(piece);
-                        check_attack = attack;
-                    }
-                },
-                (Color::Black, Color::White) => {
-                    for m in piece.moves(&black_pieces, &white_pieces) {
-                        attack |= m.bits();
-                    }
-                    if attack & king.bits() != 0 {
-                        check_attackers.push(piece);
-                        check_attack = attack;
-                    }
-                },
-                _ => (),
+            if self.turn == White && *piece.color() == Black {
+                for m in piece.moves(&white_pieces, &black_pieces) {
+                    attack |= m.bits();
+                }
+                if attack & king.bits() != 0 {
+                    check_attackers.push(piece);
+                    check_attack = attack;
+                }
+            } else if self.turn == Black && *piece.color() == White {
+                for m in piece.moves(&black_pieces, &white_pieces) {
+                    attack |= m.bits();
+                }
+                if attack & king.bits() != 0 {
+                    check_attackers.push(piece);
+                    check_attack = attack;
+                }
             }
         }
 
+        /* Cast the king to the attacking peice and see 
+         * what the line of attack is to counter it
+         */
         let mut check_rays: u128 = 0x0;
         let calc_check_rays = |piece_map: &Pieces| {
             let mut king_rays: u128 = 0x0;
-            match self.turn {
-                Color::White => {
-                    for mv in &piece_map.moves(&black_pieces, &white_pieces) {
-                        king_rays |= mv.bits();
-                    }
-                },
-                Color::Black => {
-                    for mv in &piece_map.moves(&white_pieces, &black_pieces) {
-                        king_rays |= mv.bits();
-                    }
-                },
+            if self.turn == White {
+                for mv in &piece_map.moves(&black_pieces, &white_pieces) {
+                    king_rays |= mv.bits();
+                }
+            } else { // Black
+                for mv in &piece_map.moves(&white_pieces, &black_pieces) {
+                    king_rays |= mv.bits();
+                }
             }
             return king_rays & check_attack;
         };
 
-        if check_attackers.len() == 1 {
-            match check_attackers[0] {
-                Pieces::Pawn(_) => {
-                    let king_map = Pieces::Pawn(Pawn::from_bits(*king.bits(), self.turn));
-                    check_rays = calc_check_rays(&king_map);
-                },
-                Pieces::Bishop(_) => {
-                    let king_map = Pieces::Bishop(Bishop::from_bits(*king.bits(), self.turn));
-                    check_rays = calc_check_rays(&king_map);
-                },
-                Pieces::Knight(_) => {
-                    let king_map = Pieces::Knight(Knight::from_bits(*king.bits(), self.turn));
-                    check_rays = calc_check_rays(&king_map);
-                },
-                Pieces::Rook(_) => {
+        // if double check return only king moves
+        if check_attackers.len() > 1 { return moves; }
+
+        match check_attackers[0] {
+            Pieces::Pawn(_) => {
+                let king_map = Pieces::Pawn(Pawn::from_bits(*king.bits(), self.turn));
+                check_rays = calc_check_rays(&king_map);
+            },
+            Pieces::Bishop(_) => {
+                let king_map = Pieces::Bishop(Bishop::from_bits(*king.bits(), self.turn));
+                check_rays = calc_check_rays(&king_map);
+            },
+            Pieces::Knight(_) => {
+                let king_map = Pieces::Knight(Knight::from_bits(*king.bits(), self.turn));
+                check_rays = calc_check_rays(&king_map);
+            },
+            Pieces::Rook(_) => {
+                let king_map = Pieces::Rook(Rook::from_bits(*king.bits(), self.turn));
+                check_rays = calc_check_rays(&king_map);
+            },
+            Pieces::Queen(_) => {
+                let king_map = Pieces::Bishop(Bishop::from_bits(*king.bits(), self.turn));
+                check_rays = calc_check_rays(&king_map);
+
+                // check if queen is attacking on diagonal, if not use rook attacks
+                let queen = check_attackers[0];
+                if check_rays & (king.bits() | queen.bits()) != king.bits() | queen.bits() {
                     let king_map = Pieces::Rook(Rook::from_bits(*king.bits(), self.turn));
                     check_rays = calc_check_rays(&king_map);
-                },
-                Pieces::Queen(_) => {
-                    let king_map = Pieces::Bishop(Bishop::from_bits(*king.bits(), self.turn));
-                    check_rays = calc_check_rays(&king_map);
+                }
+            },
+            _ => panic!("King should not be checking another king"),
+        }
+        for piece in &self.pieces {
+            if let Pieces::King(_) = piece { continue; }
 
-                    // check if queen is attacking on diagonal, if not use rook attacks
-                    let queen = check_attackers[0];
-                    if check_rays & (king.bits() | queen.bits()) != king.bits() | queen.bits() {
-                        let king_map = Pieces::Rook(Rook::from_bits(*king.bits(), self.turn));
-                        check_rays = calc_check_rays(&king_map);
+            if self.turn == White && *piece.color() == White {
+                for mv in piece.moves(&black_pieces, &white_pieces) {
+                    if mv.bits() & check_rays != 0 {
+                        moves.push(mv);
                     }
-                },
-                _ => panic!("King should not be checking another king"),
-            }
-            
-            for piece in &self.pieces {
-                match (self.turn, piece.color()) {
-                    (Color::White, Color::White) => {
-                        if let Pieces::King(_) = piece {
-                            continue;
-                        }
-                        for m in piece.moves(&black_pieces, &white_pieces) {
-                            if m.bits() & check_rays != 0 {
-                                moves.push(m);
-                            }
-                        }
-                    },
-                    (Color::Black, Color::Black) => {
-                        if let Pieces::King(_) = piece {
-                            continue;
-                        }
-                        for m in piece.moves(&white_pieces, &black_pieces) {
-                            if m.bits() & check_rays != 0 {
-                                moves.push(m);
-                            }
-                        }
-                    },
-                    _ => (),
+                }
+            } else if self.turn == Black && *piece.color() == Black {
+                for mv in piece.moves(&white_pieces, &black_pieces) {
+                    if mv.bits() & check_rays != 0 {
+                        moves.push(mv);
+                    }
                 }
             }
-        } else { // double check
-            return moves;
         }
 
         /* TODO */
-        // Double check
-        // add pawn promotion
+        // piece move can't cause check on own king
 
         return moves;
     }
@@ -262,8 +266,8 @@ impl Game {
     pub fn init_boards(&self, white_pieces: &mut u128, black_pieces: &mut u128) {
         for piece in &self.pieces {
             match piece.color() {
-                Color::White => *white_pieces |= piece.bits(),
-                Color::Black => *black_pieces |= piece.bits(),
+                White => *white_pieces |= piece.bits(),
+                Black => *black_pieces |= piece.bits(),
             }
         }
     }
@@ -279,17 +283,45 @@ impl Game {
             }
         };
 
-        let add_en_passant = |mv: &u128| -> Option<u128> {
-            const WHITE_EN_PASSANT: u128 = 0xff00 << 0x10 | 0xff00 << 0x30;
-            const BLACK_EN_PASSANT: u128 = 0xff00 << 0x60 | 0xff00 << 0x40;
-
-            if mv & WHITE_EN_PASSANT == *mv {
-                let en_passant = mv & (0xff00 << 0x10);
-                return Some(en_passant << 0x10);
+        let try_promote = |piece: &mut Pieces, mv: &u128| {
+            if mv & (promote::BLACK_BACK_RANK | promote::WHITE_BACK_RANK) == 0 { return; }
+            if self.turn == White {
+                if mv & promote::WHITE_ROOK != 0 {
+                    *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), White));
+                }
+                else if mv & promote::WHITE_KNIGHT != 0 {
+                    *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), White));
+                }
+                else if mv & promote::WHITE_BISHOP != 0 {
+                    *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), White));
+                }
+                else {
+                    *piece = Pieces::Queen(Queen::from_bits(*piece.bits(), White));
+                }
+            } else { // Black
+                if mv & promote::BLACK_ROOK != 0 {
+                    *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), Black));
+                }
+                else if mv & promote::BLACK_KNIGHT != 0 {
+                    *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), Black));
+                }
+                else if mv & promote::BLACK_BISHOP != 0 {
+                    *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), Black));
+                }
+                else {
+                    *piece = Pieces::Queen(Queen::from_bits(*piece.bits(), Black));
+                }
             }
-            else if mv & BLACK_EN_PASSANT == *mv {
-                let en_passant = mv & (0xff00 << 0x60);
-                return Some(en_passant >> 0x10);
+        };
+
+        let add_en_passant = |mv: &u128| -> Option<u128> {
+            if mv & en_passant::WHITE_EN_PASSANT == *mv {
+                let ep = mv & (0xff00 << 0x10);
+                return Some(ep << 0x10);
+            }
+            else if mv & en_passant::BLACK_EN_PASSANT == *mv {
+                let ep = mv & (0xff00 << 0x60);
+                return Some(ep >> 0x10);
             }
             return None;
         };
@@ -299,18 +331,16 @@ impl Game {
         let mut ep_detect = 0; // ensures two pawns moved for ep to be valid
         let mut ep_remove: usize = 64;
         for (i, piece) in self.pieces.iter_mut().enumerate() {
-            // move the colors piece
             if *piece.color() == self.turn && piece.bits() & mv != 0 {
                 // if pawn move and is en passant, add en passant,
                 if let Pieces::Pawn(_) = piece {
                     ep_detect += 1;
-                    // add en passant
                     if let Some(ep) = add_en_passant(&mv) {
                         self.en_passant_square = ep;
                         ep_this_turn = true;
-                    // attack enemy en apssant
                     }
-                } // end if-let
+                    try_promote(piece, &mv);
+                }
 
                 match mv {
                     castle::K_ZONE => try_castle(piece, castle::K_MOVE, castle::K_ROOK),
@@ -343,20 +373,17 @@ impl Game {
                 removed.push(i);
             }
             else if let Pieces::Pawn(_) = piece {
-                if !(self.en_passant_square & mv != 0) { continue; }
-                match piece.color() {
-                    Color::White => {
-                        if piece.bits() & (self.en_passant_square << 0x10) != 0 {
-                            ep_detect += 1;
-                            ep_remove = i;
-                        }
-                    },
-                    Color::Black => {
-                        if piece.bits() & (self.en_passant_square >> 0x10) != 0 {
-                            ep_detect += 1;
-                            ep_remove = i;
-                        }
-                    },
+                if self.en_passant_square & mv == 0 { continue; }
+                if *piece.color() == White {
+                    if piece.bits() & (self.en_passant_square << 0x10) != 0 {
+                        ep_detect += 1;
+                        ep_remove = i;
+                    }
+                } else { // Black
+                    if piece.bits() & (self.en_passant_square >> 0x10) != 0 {
+                        ep_detect += 1;
+                        ep_remove = i;
+                    }
                 }
             }
         } // end for loop
@@ -371,11 +398,11 @@ impl Game {
         // adjust half moves to reflect turn
         if removed.len() > 0 { self.half_moves = 0; } else { self.half_moves += 1; }
 
-        if self.turn == Color::White {
-            self.turn = Color::Black
+        if self.turn == White {
+            self.turn = Black
         } else {
             self.move_count += 1;
-            self.turn = Color::White;
+            self.turn = White;
         }
     }
 

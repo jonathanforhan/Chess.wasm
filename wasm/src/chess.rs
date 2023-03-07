@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use js_sys;
 
-use crate::game::castle;
+use crate::game::{castle, promote};
 
 use super::game::{
     Game,
@@ -48,6 +48,8 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
             .map_err(|_| JsError::new("Wasm object access error"))?;
         js_sys::Reflect::set(&obj, &"to".into(), &JsValue::from_str(&to))
             .map_err(|_| JsError::new("Wasm object access error"))?;
+        js_sys::Reflect::set(&obj, &"promotion".into(), &JsValue::from_str(&""))
+            .map_err(|_| JsError::new("Wasm object access error"))?;
 
         arr.push(&obj);
     }
@@ -69,11 +71,17 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
     let to = js_sys::Reflect::get(&obj, &"to".into())
         .map_err(|_| JsError::new("Wasm object access error"))?;
 
+    let promotion = js_sys::Reflect::get(&obj, &"promotion".into())
+        .map_err(|_| JsError::new("Wasm object access error"))?;
+
     let src = algebraic_to_bits(JsValue::as_string(&from)
         .ok_or_else(|| JsError::new("Move parse error"))?)?;
 
     let dst = algebraic_to_bits(JsValue::as_string(&to)
         .ok_or_else(|| JsError::new("Move parse error"))?)?;
+
+    let promotion = JsValue::as_string(&promotion)
+        .ok_or_else(|| JsError::new("Wasm object access error"))?;
 
     let mut mv = src | dst;
 
@@ -89,6 +97,18 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
     }
     else if mv == castle::q_MOVE && game.castling.contains("q") {
         mv = castle::q_ZONE;
+    }
+
+    // Check pawn promotion
+    match &promotion as &str {
+        "R" => mv |= promote::WHITE_ROOK,
+        "N" => mv |= promote::WHITE_KNIGHT,
+        "B" => mv |= promote::WHITE_BISHOP,
+        "r" => mv |= promote::BLACK_ROOK,
+        "n" => mv |= promote::BLACK_KNIGHT,
+        "b" => mv |= promote::BLACK_BISHOP,
+        "" => (),
+        _ => { return Err(JsError::new("Invalid promotion")); }
     }
 
     // Validate move
