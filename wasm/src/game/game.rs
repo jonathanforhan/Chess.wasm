@@ -1,7 +1,5 @@
 use std::io::{Result, Error};
 
-use crate::game::{pieces::Queen, promote};
-
 use super::{
     pieces::{
         Color,
@@ -9,14 +7,14 @@ use super::{
         Color::Black,
         Piece,
         Pieces,
-        King,
+        Pawn,
         Bishop,
         Knight,
         Rook,
-        Pawn
+        Queen,
+        King,
     },
-    castle,
-    en_passant,
+    util::*,
 };
 
 pub struct Game {
@@ -43,10 +41,13 @@ impl Game {
     pub fn moves(&self) -> Vec<Pieces> {
         let mut moves: Vec<Pieces> = Vec::new();
         
-        let mut king: Option<&Pieces> = None;
+        let mut king: Option<&Pieces> = None; // not really optional
         let mut check = false;
         let (mut white_attacks, mut black_attacks): (u128, u128) = (0x0, 0x0);
         let (mut white_pieces,  mut black_pieces):  (u128, u128) = (0x0, 0x0);
+        let mut opp_bishop: u128 = 0x0;
+        let mut opp_rook: u128 = 0x0;
+        let mut opp_queen: u128 = 0x0;
 
         self.init_boards(&mut white_pieces, &mut black_pieces);
 
@@ -60,6 +61,25 @@ impl Game {
             mvs.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | promote::BLACK_ROOK, Black)));
             mvs.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | promote::BLACK_KNIGHT, Black)));
             mvs.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | promote::BLACK_BISHOP, Black)));
+        };
+
+        // removes moves that cause 
+        let filter_pins = |king_pos: &u128, mv: &u128, test_diagonal: &u128, test_straight: &u128| -> bool {
+            let test_pieces = match self.turn {
+                White => white_pieces ^ mv,
+                Black => black_pieces ^ mv
+            };
+
+            let diagonal = Pieces::Bishop(Bishop::from_bits(*king_pos, self.turn));
+            let straight = Pieces::Rook(Rook::from_bits(*king_pos, self.turn));
+            
+            for m in diagonal.moves(test_diagonal, &test_pieces) {
+                if m.bits() & test_diagonal != 0 { return false; }
+            }
+            for m in straight.moves(test_straight, &test_pieces) {
+                if m.bits() & test_straight != 0 { return false; }
+            }
+            return true;
         };
 
         /* Add moves, save king moves to be evaluated later
@@ -91,6 +111,12 @@ impl Game {
                     // must add own pieces to opp to detect check
                     for m in piece.moves(&(white_pieces | black_pieces), &0u128) {
                         black_attacks |= m.bits() ^ piece.bits();
+                        match m {
+                            Pieces::Bishop(_) => opp_bishop |= piece.bits(),
+                            Pieces::Rook(_) => opp_rook |= piece.bits(),
+                            Pieces::Queen(_) => opp_queen |= piece.bits(),
+                            _ => ()
+                        }
                     }
                 },
                 // Black turn
@@ -115,6 +141,12 @@ impl Game {
                 (Black, White, _) => {
                     for m in piece.moves(&(black_pieces | white_pieces), &0u128) {
                         white_attacks |= m.bits() ^ piece.bits();
+                        match m {
+                            Pieces::Bishop(_) => opp_bishop |= piece.bits(),
+                            Pieces::Rook(_) => opp_rook |= piece.bits(),
+                            Pieces::Queen(_) => opp_queen |= piece.bits(),
+                            _ => ()
+                        }
                     }
                 },
             }
@@ -162,6 +194,13 @@ impl Game {
             }
         }
 
+        let opp_diagonal = opp_bishop | opp_queen;
+        let opp_straight = opp_rook | opp_queen;
+        let mut moves = moves.into_iter().filter(|m| {
+            if let Pieces::King(_) = m { return true; }
+            filter_pins(king.bits(), &m.bits(), &(opp_diagonal & !m.bits()), &(opp_straight & !m.bits()))
+        }).collect::<Vec<Pieces>>();
+
         if !check { return moves; }
 
         // determine what pieces are putting king under check
@@ -191,7 +230,7 @@ impl Game {
         /* Cast the king to the attacking peice and see 
          * what the line of attack is to counter it
          */
-        let mut check_rays: u128 = 0x0;
+        let mut check_rays: u128;
         let calc_check_rays = |piece_map: &Pieces| {
             let mut king_rays: u128 = 0x0;
             if self.turn == White {
@@ -211,7 +250,7 @@ impl Game {
 
         match check_attackers[0] {
             Pieces::Pawn(_) => {
-                let king_map = Pieces::Pawn(Pawn::from_bits(*king.bits(), self.turn));
+                let king_map = Pieces::Bishop(Bishop::from_bits(*king.bits(), self.turn));
                 check_rays = calc_check_rays(&king_map);
             },
             Pieces::Bishop(_) => {
@@ -258,7 +297,7 @@ impl Game {
         }
 
         /* TODO */
-        // piece move can't cause check on own king
+        // fix check rays bug
 
         return moves;
     }

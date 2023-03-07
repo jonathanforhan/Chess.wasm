@@ -1,0 +1,19 @@
+pub mod constants {
+    // Promotion indicators are tacked onto
+    // pawn promtion moves and used to determine
+    // the desired promtion piece.
+    // No indicator is a Queen promotion
+
+    // White promotion option indicators
+    pub const WHITE_ROOK: u128 = 0x0100;   // x.......
+    pub const WHITE_KNIGHT: u128 = 0x0200; // .x......
+    pub const WHITE_BISHOP: u128 = 0x0400; // ..x.....
+    pub const WHITE_BACK_RANK: u128 = 0xff00 << 0x70;
+
+    // Black promotion option indicators
+    pub const BLACK_ROOK: u128 = 0x0100 << 0x70;   // x.......
+    pub const BLACK_KNIGHT: u128 = 0x0200 << 0x70; // .x......
+    pub const BLACK_BISHOP: u128 = 0x0400 << 0x70; // ..x.....
+    pub const BLACK_BACK_RANK: u128 = 0xff00;
+}
+pub use constants::*;
