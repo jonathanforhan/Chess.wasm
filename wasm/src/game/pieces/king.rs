@@ -1,6 +1,7 @@
 use super::{Piece, Pieces, Color};
 use crate::MASK;
 
+#[derive(Clone)]
 pub struct King {
     bits: u128,
     color: Color,

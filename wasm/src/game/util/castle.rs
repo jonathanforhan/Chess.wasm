@@ -1,3 +1,11 @@
+use crate::game::pieces::{
+    Color,
+    Color::White,
+    Color::Black,
+    Pieces,
+    King,
+};
+
 #[allow(non_upper_case_globals)]
 pub mod constants
 {
@@ -38,3 +46,23 @@ pub mod constants
     pub const q_VALID: u128 = 0x0e << 0x78; // .xxx....
 }
 pub use constants::*;
+
+pub fn add_castling(castling: &String, obstacles: &u128, color: Color) -> Vec<Pieces>{
+    let mut result = Vec::new();
+    if color == White {
+        if castling.contains('K') && K_VALID & obstacles == 0 {
+            result.push(Pieces::King(King::from_bits(K_ZONE, White)));
+        }
+        if castling.contains('Q') && Q_VALID & obstacles == 0 {
+            result.push(Pieces::King(King::from_bits(Q_ZONE, White)));
+        }
+    } else { // Black
+        if castling.contains('k') && k_VALID & obstacles == 0 {
+            result.push(Pieces::King(King::from_bits(k_ZONE, Black)));
+        }
+        if castling.contains('q') && q_VALID & obstacles == 0 {
+            result.push(Pieces::King(King::from_bits(q_ZONE, Black)));
+        }
+    }
+    return result;
+}

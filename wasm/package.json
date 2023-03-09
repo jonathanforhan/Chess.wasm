@@ -6,6 +6,7 @@
   "author": "Jonathan Forhan",
   "license": "MIT",
   "scripts": {
-    "build": "wasm-pack build --target web"
+    "build": "wasm-pack build --target web",
+    "perft": "cargo test --profile perft perft -- --nocapture"
   }
 }

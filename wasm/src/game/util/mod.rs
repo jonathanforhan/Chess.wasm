@@ -1,6 +1,63 @@
+use crate::game::{
+    Game,
+    pieces::{
+        Color::White,
+        Color::Black,
+        Piece,
+        Pieces,
+    },
+};
+
+pub mod core;
 pub mod castle;
-pub use castle::*;
 pub mod en_passant;
-pub use en_passant::*;
 pub mod promote;
-pub use promote::*;
+pub mod check;
+
+pub struct GameInfo<'a> {
+    pub king: &'a Pieces,
+    pub check: bool,
+    pub team_pieces: u128,
+    pub team_attacks: u128,
+    pub opp_pieces: u128,
+    pub opp_attacks: u128,
+
+    /* opp directional used for pin detection */
+    pub opp_diagonal: u128, // bishop and queen
+    pub opp_straight: u128, // rook and queen
+}
+
+impl<'a> GameInfo<'a> {
+    pub fn init(game: &'a Game) -> Self {
+        let mut king: Option<&'a Pieces> = None;
+        let check = false;
+        let (mut team_pieces, mut opp_pieces) = (0u128, 0u128);
+        let (team_attacks, opp_attacks) = (0u128, 0u128);
+        let (opp_diagonal, opp_straight) = (0u128, 0u128);
+
+        for piece in &game.pieces {
+            match (game.turn, piece.color()) {
+                (White, White) | (Black, Black) => {
+                    if let Pieces::King(_) = piece {
+                        king = Some(piece);
+                    }
+                    team_pieces |= piece.bits()
+                },
+                (White, Black) | (Black, White) => {
+                    opp_pieces |= piece.bits()
+                },
+            }
+        }
+
+        GameInfo {
+            king: king.unwrap(),
+            check,
+            team_pieces,
+            team_attacks,
+            opp_pieces,
+            opp_attacks,
+            opp_diagonal,
+            opp_straight
+        }
+    }
+}

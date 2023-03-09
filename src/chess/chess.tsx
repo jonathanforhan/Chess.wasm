@@ -7,7 +7,7 @@ interface Chess {
 class Chess {
   constructor(fen: string) {
     this._fen = fen;
-    if(this._fen === "" || this._fen === "start") {
+    if(this._fen === undefined || this._fen === "start") {
       this._fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     }
     init();

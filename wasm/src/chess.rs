@@ -1,11 +1,12 @@
 use wasm_bindgen::prelude::*;
 use js_sys;
 
-use crate::game::{castle, promote};
-
-use super::game::{
+use crate::game::{
+    util::*,
     Game,
+    pieces::Color,
     pieces::Piece,
+    pieces::Pieces,
     fen,
     notation::{
         algebraic_to_bits,
@@ -27,7 +28,7 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
         Ok(g) => g,
         Err(e) => return Err(JsError::new(&format!("{}", e)))
     };
-    let mut current: u128 = 0;
+    let mut current = 0u128;
     for p in &game.pieces {
         if p.color() == &game.turn { current |= p.bits(); }
     }
@@ -36,8 +37,28 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
 
     let mvs = game.moves();
     for m in mvs {
-        let src = current & m.bits(); // find the matching starting location
-        let dst = m.bits() ^ src;     // subtract starting pos from move map
+        let src = current & m.bits();  // find the matching starting location
+        let mut dst = m.bits() & !src; // subtract starting pos from move map
+        let mut promotion = 0u128;
+        if let Pieces::Pawn(_) = m {
+            match m.color() {
+                Color::White => dst &= !promote::BLACK_BACK_RANK,
+                Color::Black => dst &= !promote::WHITE_BACK_RANK,
+            }
+            promotion |= m.bits() ^ (src | dst);
+        }
+
+        let promotion = match promotion {
+            promote::WHITE_ROOK => "W",
+            promote::WHITE_BISHOP => "B",
+            promote::WHITE_KNIGHT => "N",
+            promote::BLACK_ROOK => "w",
+            promote::BLACK_BISHOP => "b",
+            promote::BLACK_KNIGHT => "n",
+            _ => "",
+        };
+        /* TODO */
+        // opponent castling javascript wrapper
 
         // Convert bits to string
         let (from, to) = (bits_to_algebraic(&src)?, bits_to_algebraic(&dst)?);
@@ -48,7 +69,7 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
             .map_err(|_| JsError::new("Wasm object access error"))?;
         js_sys::Reflect::set(&obj, &"to".into(), &JsValue::from_str(&to))
             .map_err(|_| JsError::new("Wasm object access error"))?;
-        js_sys::Reflect::set(&obj, &"promotion".into(), &JsValue::from_str(&""))
+        js_sys::Reflect::set(&obj, &"promotion".into(), &JsValue::from_str(&promotion))
             .map_err(|_| JsError::new("Wasm object access error"))?;
 
         arr.push(&obj);

@@ -19,6 +19,7 @@ pub enum Color {
     Black,
 }
 
+#[derive(Clone)]
 #[enum_dispatch(Piece)]
 pub enum Pieces {
     Pawn(Pawn),
