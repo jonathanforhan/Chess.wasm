@@ -31,24 +31,30 @@ pub mod constants {
 }
 pub use constants::*;
 
-pub fn add_promotions(mvs: &Vec<Pieces>, color: Color) -> Vec<Pieces> {
-    let mut moves = Vec::new();
+pub fn add_promotions(color: Color, moves: &mut Vec<Pieces>) {
+    let mut promoting: Option<[Pieces; 3]> = None;
     if color == White {
-        for mv in mvs {
+        for mv in moves.iter() {
             if mv.bits() & WHITE_BACK_RANK == 0 { continue; }
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_ROOK, White)));
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_KNIGHT, White)));
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_BISHOP, White)));
+            promoting = Some([
+                Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_ROOK, White)),
+                Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_KNIGHT, White)),
+                Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_BISHOP, White))
+            ]);
         }
     } else { // Black
-        for mv in mvs {
+        for mv in moves.iter() {
             if mv.bits() & BLACK_BACK_RANK == 0 { continue; }
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_ROOK, Black)));
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_KNIGHT, Black)));
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_BISHOP, Black)));
+            promoting = Some([
+                Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_ROOK, Black)),
+                Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_KNIGHT, Black)),
+                Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_BISHOP, Black))
+            ]);
         }
     }
-    return moves;
+    if let Some(promoting) = promoting {
+        moves.extend_from_slice(&promoting[..]);
+    }
 }
 
 pub fn try_promote (piece: &mut Pieces, mv: &u128, turn: Color) {

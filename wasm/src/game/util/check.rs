@@ -29,35 +29,32 @@ pub fn filter_pins(info: &GameInfo, game: &Game, mv: &u128) -> bool {
     let test_diagonal = info.opp_diagonal & !mv;
     let test_straight = info.opp_straight & !mv;
 
-    for m in diagonal.moves(&(info.opp_pieces & !en_passant), &(info.team_pieces ^ mv)) {
-        if m.bits() & test_diagonal != 0 { return false; }
-    }
-    for m in straight.moves(&(info.opp_pieces & !en_passant), &(info.team_pieces ^ mv)) {
-        if m.bits() & test_straight != 0 { return false; }
-    }
+    let mut diagonal_moves = 0u128;
+    diagonal.moves_as_bits(&(info.opp_pieces & !en_passant), &(info.team_pieces ^ mv), &mut diagonal_moves);
+    if diagonal_moves & test_diagonal != 0 { return false; }
+
+    let mut straight_moves = 0u128;
+    straight.moves_as_bits(&(info.opp_pieces & !en_passant), &(info.team_pieces ^ mv), &mut straight_moves);
+    if straight_moves & test_straight != 0 { return false; }
 
     return true;
 }
 
 pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
     let mut king_rays = 0u128;
+
     let king_ray_maker = Pieces::Queen(Queen::from_bits(*info.king.bits(), game.turn));
-    for mv in king_ray_maker.moves(&info.opp_pieces, &info.team_pieces) {
-        king_rays |= mv.bits();
-    }
+    king_ray_maker.moves_as_bits(&info.opp_pieces, &info.team_pieces, &mut king_rays);
+
     let king_ray_maker = Pieces::Knight(Knight::from_bits(*info.king.bits(), game.turn));
-    for mv in king_ray_maker.moves(&info.opp_pieces, &info.team_pieces) {
-        king_rays |= mv.bits();
-    }
+    king_ray_maker.moves_as_bits(&info.opp_pieces, &info.team_pieces, &mut king_rays);
 
     let mut attackers: Vec::<&Pieces> = Vec::new();
     let mut attack = 0u128;
     for piece in &game.pieces {
         let mut bits = 0u128;
         if game.turn != *piece.color() && piece.bits() & king_rays != 0 {
-            for m in piece.moves(&info.team_pieces, &info.opp_pieces) {
-                bits |= m.bits();
-            }
+            piece.moves_as_bits(&info.team_pieces, &info.opp_pieces, &mut bits);
             if bits & info.king.bits() != 0 {
                 attackers.push(piece);
                 attack = bits;
@@ -74,9 +71,7 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
      */
     let calc_rays = |piece_map: &Pieces, attack: &u128| {
         let mut piece_rays = 0u128;
-        for mv in &piece_map.moves(&info.opp_pieces, &info.team_pieces) {
-            piece_rays |= mv.bits();
-        }
+        piece_map.moves_as_bits(&info.opp_pieces, &info.team_pieces, &mut piece_rays);
         return piece_rays & attack;
     };
 
@@ -97,9 +92,8 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
         Pieces::Queen(_) => {
             attack = 0u128;
             let piece = Pieces::Bishop(Bishop::from_bits(*attackers[0].bits(), game.turn));
-            for m in piece.moves(&info.team_pieces, &info.opp_pieces) {
-                attack |= m.bits();
-            }
+            piece.moves_as_bits(&info.team_pieces, &info.opp_pieces, &mut attack);
+
             let king_map = Pieces::Bishop(Bishop::from_bits(*info.king.bits(), game.turn));
             rays = calc_rays(&king_map, &attack);
 
@@ -108,9 +102,8 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
             if rays & (info.king.bits() | queen.bits()) != info.king.bits() | queen.bits() {
                 attack = 0u128;
                 let piece = Pieces::Rook(Rook::from_bits(*attackers[0].bits(), game.turn));
-                for m in piece.moves(&info.team_pieces, &info.opp_pieces) {
-                    attack |= m.bits();
-                }
+                piece.moves_as_bits(&info.team_pieces, &info.opp_pieces, &mut attack);
+
                 let king_map = Pieces::Rook(Rook::from_bits(*info.king.bits(), game.turn));
                 rays = calc_rays(&king_map, &attack);
             }
@@ -118,11 +111,13 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
         _ => panic!("King should not be checking another king"),
     }
 
-
     for piece in &game.pieces {
         if game.turn == *piece.color() {
             if let Pieces::King(_) = piece { continue; }
-            for mv in piece.moves(&info.opp_pieces, &info.team_pieces) {
+
+            let mut piece_moves = Vec::with_capacity(24);
+            piece.moves(&info.opp_pieces, &info.team_pieces, &mut piece_moves);
+            for mv in piece_moves {
                 if mv.bits() & rays != 0 { moves.push(mv); }
             }
         }

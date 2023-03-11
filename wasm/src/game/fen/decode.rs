@@ -1,11 +1,10 @@
 use super::{
     FenError,
     validate,
-};
-
-use super::super::{
-    Game,
-    pieces::*,
+    super::{
+        Game,
+        pieces::*,
+    }
 };
 
 pub fn decode<'a>(fen: &str) -> Result<Game, FenError<'a>> {

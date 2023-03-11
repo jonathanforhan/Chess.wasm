@@ -45,27 +45,30 @@ pub mod constants
     pub const Q_VALID: u128 = 0x0e << 0x08; // .xxx....
     pub const k_VALID: u128 = 0x60 << 0x78; // .....xx.
     pub const q_VALID: u128 = 0x0e << 0x78; // .xxx....
+
+    // Castling is still possible when b8 and b1
+    // are under attack by opposing pieces, hence
+    // edge case
+    pub const EDGE_CASE: u128 = (0x02 << 0x08) | (0x02 << 0x78);
 }
 pub use constants::*;
 
-pub fn add_castling(castling: &String, obstacles: &u128, color: Color) -> Vec<Pieces>{
-    let mut result = Vec::new();
+pub fn add_castling(castling: &String, obstacles: &u128, color: Color, moves: &mut Vec<Pieces>) {
     if color == White {
         if castling.contains('K') && K_VALID & obstacles == 0 {
-            result.push(Pieces::King(King::from_bits(K_ZONE, White)));
+            moves.push(Pieces::King(King::from_bits(K_ZONE, White)));
         }
         if castling.contains('Q') && Q_VALID & obstacles == 0 {
-            result.push(Pieces::King(King::from_bits(Q_ZONE, White)));
+            moves.push(Pieces::King(King::from_bits(Q_ZONE, White)));
         }
     } else { // Black
         if castling.contains('k') && k_VALID & obstacles == 0 {
-            result.push(Pieces::King(King::from_bits(k_ZONE, Black)));
+            moves.push(Pieces::King(King::from_bits(k_ZONE, Black)));
         }
         if castling.contains('q') && q_VALID & obstacles == 0 {
-            result.push(Pieces::King(King::from_bits(q_ZONE, Black)));
+            moves.push(Pieces::King(King::from_bits(q_ZONE, Black)));
         }
     }
-    return result;
 }
 
 pub fn try_castle (piece: &mut Pieces, king_move: u128, rook_move: u128) {

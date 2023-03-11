@@ -46,9 +46,7 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
         let mut src = current & m.bits();  // find the matching starting location
         let mut dst = m.bits() & !src; // subtract starting pos from move map
         let mut promotion = 0u128;
-        let mut pawn = false;
         if let Pieces::Pawn(_) = m {
-            pawn = true;
             match m.color() {
                 Color::White => {
                     dst &= !promote::BLACK_BACK_RANK;
@@ -62,7 +60,7 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
             promotion |= m.bits() ^ (src | dst);
         }
 
-        let mut promotion = match promotion {
+        let promotion = match promotion {
             promote::WHITE_ROOK => "R",
             promote::WHITE_BISHOP => "B",
             promote::WHITE_KNIGHT => "N",
@@ -76,12 +74,6 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
         let obj = js_sys::Object::new();
 
         let (from ,to) = (bits_to_algebraic(&src)?, bits_to_algebraic(&dst)?);
-        if pawn && promotion == "" && to.contains("1") {
-            match m.color() {
-                Color::White => promotion = "Q",
-                Color::Black => promotion = "q",
-            }
-        }
 
         // Wrap in JS object
         js_sys::Reflect::set(&obj, &"from".into(), &JsValue::from_str(&from))

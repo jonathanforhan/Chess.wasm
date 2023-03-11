@@ -1,5 +1,5 @@
 use std::io::{Result, Error};
-
+use smallvec::SmallVec;
 use super::{
     pieces::{
         Color,
@@ -46,7 +46,7 @@ impl Game {
      * essentially treating the color's turn as maximizing or minimizing
      */
     pub fn moves(&self) -> Vec<Pieces> {
-        let mut moves: Vec<Pieces> = Vec::new();
+        let mut moves: Vec<Pieces> = Vec::with_capacity(42);
         let mut info = GameInfo::init(&self);
 
         /* Add moves, save king to be evaluated later
@@ -62,28 +62,28 @@ impl Game {
             info.check = true;
             moves.clear();
         }
-        moves.append(&mut info.king.moves(&info.opp_attacks, &info.team_pieces));
+        info.king.moves(&info.opp_attacks, &info.team_pieces, &mut moves);
 
         /* Adds the castling options if valid
          * a bit is added indicating which option 
          * is chosen for promotion Q, R, B, N
          */
         if !info.check {
-            const EDGE_CASE: u128 = (0x02 << 0x08) | (0x02 << 0x78);
-            let obstacles = (info.opp_attacks & !EDGE_CASE) | info.opp_pieces | info.team_pieces;
-            moves.append(&mut castle::add_castling(&self.castling, &obstacles, self.turn));
+            let obstacles = (info.opp_attacks & !castle::EDGE_CASE) | info.opp_pieces | info.team_pieces;
+            castle::add_castling(&self.castling, &obstacles, self.turn, &mut moves);
         }
 
         /* trim moves to disgard moving pinned pieces
          * casts feelers from king and detects if peice
          * is checking him
          */
-        let mut moves = moves.into_iter().filter(|m| {
-            if let Pieces::King(_) = m { return true; }
-            check::filter_pins(&info, &self, &m.bits())
-        }).collect::<Vec<Pieces>>();
-
-        if !info.check { return moves; }
+        if !info.check {
+            let moves = moves.into_iter().filter(|m| {
+                if let Pieces::King(_) = *m { return true; }
+                check::filter_pins(&info, &self, &m.bits())
+            }).collect::<Vec<Pieces>>();
+            return moves;
+        }
 
         /* Gen moves that are check-safe
          * does this by casting king to another piece
@@ -93,7 +93,7 @@ impl Game {
         check::gen_check_moves(&info, &self, &mut moves);
 
         let moves = moves.into_iter().filter(|m| {
-            if let Pieces::King(_) = m { return true; }
+            if let Pieces::King(_) = *m { return true; }
             check::filter_pins(&info, &self, &m.bits())
         }).collect::<Vec<Pieces>>();
 
@@ -118,6 +118,10 @@ impl Game {
                     promote::try_promote(piece, &mv, self.turn);
                 }
 
+                if self.castling == "-" {
+                    piece.set_bits(&(piece.bits() ^ mv));
+                    continue;
+                }
                 match mv {
                     castle::K_ZONE => castle::try_castle(piece, castle::K_MOVE, castle::K_ROOK),
                     castle::Q_ZONE => castle::try_castle(piece, castle::Q_MOVE, castle::Q_ROOK),
@@ -126,7 +130,6 @@ impl Game {
                     _ => piece.set_bits(&(piece.bits() ^ mv))
                 };
 
-                if self.castling == "-" { continue; }
                 castle::fix_castle(&mut self.castling, &mv);
             }
             else if piece.bits() & !mv == 0 {

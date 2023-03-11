@@ -22,7 +22,7 @@ fn test_fen() {
 
 #[test]
 fn test_move() {
-    let game = fen::decode("4k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/P2P2PP/r2Q1R1K w k - 0 2").unwrap();
+    let game = fen::decode("r3r1k1/p1ppqpb1/bn2Pnp1/4N3/1p2P3/2N2Q1p/PPPBBPPP/R4K1R b - - 0 2").unwrap();
     let (mut w, mut b) = (0, 0);
     game.debug(&mut w, &mut b);
 
@@ -30,7 +30,7 @@ fn test_move() {
 
     let mv = game.moves();
     for m in &mv {
-        if let Pieces::Pawn(_) = m {
+        if let Pieces::Rook(_) = m {
             print_bits(&m.bits(), 'x');
         }
     }

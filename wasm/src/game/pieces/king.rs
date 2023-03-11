@@ -32,19 +32,18 @@ impl Piece for King {
         self.bits = *bits;
     }
 
-    fn moves(&self, opp: &u128, team: &u128) -> Vec<Pieces> {
+    fn moves(&self, opp: &u128, team: &u128, moves: &mut Vec<Pieces>) {
         /* NOTE
          * opp MUST be the sum of all oppositision attacks
          * and teammates
          */
-        let mut valid_moves = Vec::<Pieces>::new();
         let bits = &self.bits;
         let color = &self.color;
 
         let mut validate = |test: &u128| {
             if test & MASK == 0 { return; }
             if test & (team | opp) != 0 { return; }
-            valid_moves.push(Pieces::King(King { bits: *test | bits, color: *color }));
+            moves.push(Pieces::King(King { bits: *test | bits, color: *color }));
         };
 
         let mut test_move = |test: u128| { validate(&test); };
@@ -72,7 +71,85 @@ impl Piece for King {
 
         /* Southwest */
         test_move(bits >> 0x0f);
+    }
 
-        return valid_moves;
+    fn moves_as_bits(&self, opp: &u128, team: &u128, moves: &mut u128) {
+        /* NOTE
+         * opp MUST be the sum of all oppositision attacks
+         * and teammates
+         */
+        let bits = &self.bits;
+
+        let mut validate = |test: &u128| {
+            if test & MASK == 0 { return; }
+            if test & (team | opp) != 0 { return; }
+            *moves |= *test | bits;
+        };
+
+        let mut test_move = |test: u128| { validate(&test); };
+
+        /* North */
+        test_move(bits << 0x10);
+
+        /* South */
+        test_move(bits >> 0x10);
+
+        /* West */
+        test_move(bits << 0x01);
+
+        /* East */
+        test_move(bits >> 0x01);
+
+        /* Northwest */
+        test_move(bits << 0x11);
+
+        /* Southeast */
+        test_move(bits >> 0x11);
+
+        /* Northeast */
+        test_move(bits << 0x0f);
+
+        /* Southwest */
+        test_move(bits >> 0x0f);
+    }
+
+    fn moves_as_bits_exclusive(&self, opp: &u128, team: &u128, moves: &mut u128) {
+        /* NOTE
+         * opp MUST be the sum of all oppositision attacks
+         * and teammates
+         */
+        let bits = &self.bits;
+
+        let mut validate = |test: &u128| {
+            if test & MASK == 0 { return; }
+            if test & (team | opp) != 0 { return; }
+            *moves |= *test;
+        };
+
+        let mut test_move = |test: u128| { validate(&test); };
+
+        /* North */
+        test_move(bits << 0x10);
+
+        /* South */
+        test_move(bits >> 0x10);
+
+        /* West */
+        test_move(bits << 0x01);
+
+        /* East */
+        test_move(bits >> 0x01);
+
+        /* Northwest */
+        test_move(bits << 0x11);
+
+        /* Southeast */
+        test_move(bits >> 0x11);
+
+        /* Northeast */
+        test_move(bits << 0x0f);
+
+        /* Southwest */
+        test_move(bits >> 0x0f);
     }
 }

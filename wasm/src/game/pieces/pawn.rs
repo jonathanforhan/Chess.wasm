@@ -16,14 +16,12 @@ impl Pawn {
         Pawn { bits, color }
     }
 
-    pub fn attacks(&self) -> Vec<Pieces> {
-        let mut attacks: Vec<Pieces> = Vec::new();
+    pub fn attacks(&self, attacks: &mut u128) {
         let bits = &self.bits;
         let color = &self.color;
 
         let mut validate = |test: u128| {
-            if test & MASK == 0 { return; }
-            attacks.push(Pieces::Pawn(Pawn { bits: test, color: *color}));
+            *attacks |= test & MASK;
         };
 
         match color {
@@ -36,8 +34,6 @@ impl Pawn {
                 validate(bits >> 0x11);
             }
         }
-
-        return attacks;
     }
 }
 
@@ -54,53 +50,117 @@ impl Piece for Pawn {
         &self.color
     }
 
-    fn moves(&self, opp: &u128, team: &u128) -> Vec<Pieces> {
-        let mut valid_moves = Vec::<Pieces>::new();
+    fn moves(&self, opp: &u128, team: &u128, moves: &mut Vec<Pieces>) {
         let bits = &self.bits;
         let color = &self.color;
 
-        enum Action {
-            Attack,
-            Move,
-        }
+        let validate_attack = |test: u128, moves: &mut Vec<Pieces>| {
+            if test & MASK == 0 { return; }
+            if test & opp == 0 { return; }
+            moves.push(Pieces::Pawn(Pawn { bits: test | bits, color: *color }));
+        };
 
-        let mut validate = |test: u128, action: Action| -> bool {
-            match action {
-                Action::Move => {
-                    if test & MASK == 0 { return false; }
-                    if test & team != 0 { return false; }
-                    if test & opp  != 0 { return false; }
-                    valid_moves.push(Pieces::Pawn(Pawn { bits: test | bits, color: *color}));
-                    return true;
-                }
-                Action::Attack => {
-                    if test & MASK == 0 { return false; }
-                    if test & opp == 0 { return false; }
-                    valid_moves.push(Pieces::Pawn(Pawn { bits: test | bits, color: *color }));
-                    return true;
-                }
-            }
+        let validate_move = |test: u128, moves: &mut Vec<Pieces>| -> bool {
+            if test & MASK == 0 { return false; }
+            if test & team != 0 { return false; }
+            if test & opp  != 0 { return false; }
+            moves.push(Pieces::Pawn(Pawn { bits: test | bits, color: *color}));
+            return true;
         };
 
         match color {
             Color::White => {
-                validate(bits << 0x0f, Action::Attack);
-                validate(bits << 0x11, Action::Attack);
-                let valid = validate(bits << 0x10, Action::Move);
+                validate_attack(bits << 0x0f, moves);
+                validate_attack(bits << 0x11, moves);
+                let valid = validate_move(bits << 0x10, moves);
                 if valid && bits >> 0x18 & 0xff != 0 {
-                    validate(bits << 0x20, Action::Move);
+                    validate_move(bits << 0x20, moves);
                 }
             }
             Color::Black => {
-                validate(bits >> 0x0f, Action::Attack);
-                validate(bits >> 0x11, Action::Attack);
-                let valid = validate(bits >> 0x10, Action::Move);
+                validate_attack(bits >> 0x0f, moves);
+                validate_attack(bits >> 0x11, moves);
+                let valid = validate_move(bits >> 0x10, moves);
                 if valid && bits >> 0x68 & 0xff != 0 {
-                    validate(bits >> 0x20, Action::Move);
+                    validate_move(bits >> 0x20, moves);
                 }
             }
         }
+    }
 
-        return valid_moves;
+    fn moves_as_bits(&self, opp: &u128, team: &u128, moves: &mut u128) {
+        let bits = &self.bits;
+        let color = &self.color;
+
+        let validate_attack = |test: u128, moves: &mut u128| {
+            if test & MASK == 0 { return; }
+            if test & opp == 0 { return; }
+            *moves |= test | bits;
+        };
+
+        let validate_move = |test: u128, moves: &mut u128| -> bool {
+            if test & MASK == 0 { return false; }
+            if test & team != 0 { return false; }
+            if test & opp  != 0 { return false; }
+            *moves |= test | bits;
+            return true;
+        };
+
+        match color {
+            Color::White => {
+                validate_attack(bits << 0x0f, moves);
+                validate_attack(bits << 0x11, moves);
+                let valid = validate_move(bits << 0x10, moves);
+                if valid && bits >> 0x18 & 0xff != 0 {
+                    validate_move(bits << 0x20, moves);
+                }
+            }
+            Color::Black => {
+                validate_attack(bits >> 0x0f, moves);
+                validate_attack(bits >> 0x11, moves);
+                let valid = validate_move(bits >> 0x10, moves);
+                if valid && bits >> 0x68 & 0xff != 0 {
+                    validate_move(bits >> 0x20, moves);
+                }
+            }
+        }
+    }
+
+    fn moves_as_bits_exclusive(&self, opp: &u128, team: &u128, moves: &mut u128) {
+        let bits = &self.bits;
+        let color = &self.color;
+
+        let validate_attack = |test: u128, moves: &mut u128| {
+            if test & MASK == 0 { return; }
+            if test & opp == 0 { return; }
+            *moves |= test;
+        };
+
+        let validate_move = |test: u128, moves: &mut u128| -> bool {
+            if test & MASK == 0 { return false; }
+            if test & team != 0 { return false; }
+            if test & opp  != 0 { return false; }
+            *moves |= test;
+            return true;
+        };
+
+        match color {
+            Color::White => {
+                validate_attack(bits << 0x0f, moves);
+                validate_attack(bits << 0x11, moves);
+                let valid = validate_move(bits << 0x10, moves);
+                if valid && bits >> 0x18 & 0xff != 0 {
+                    validate_move(bits << 0x20, moves);
+                }
+            }
+            Color::Black => {
+                validate_attack(bits >> 0x0f, moves);
+                validate_attack(bits >> 0x11, moves);
+                let valid = validate_move(bits >> 0x10, moves);
+                if valid && bits >> 0x68 & 0xff != 0 {
+                    validate_move(bits >> 0x20, moves);
+                }
+            }
+        }
     }
 }
