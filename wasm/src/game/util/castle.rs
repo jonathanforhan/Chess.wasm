@@ -2,6 +2,7 @@ use crate::game::pieces::{
     Color,
     Color::White,
     Color::Black,
+    Piece,
     Pieces,
     King,
 };
@@ -65,4 +66,25 @@ pub fn add_castling(castling: &String, obstacles: &u128, color: Color) -> Vec<Pi
         }
     }
     return result;
+}
+
+pub fn try_castle (piece: &mut Pieces, king_move: u128, rook_move: u128) {
+    if let Pieces::King(k) = piece {
+        k.set_bits(&(k.bits() ^ king_move));
+    } else if let Pieces::Rook(r) = piece {
+        r.set_bits(&(r.bits() ^ rook_move));
+    }
+}
+
+pub fn fix_castle (castling: &mut String, mv: &u128) {
+    let mut remove_castle = |c: char, castle: u128| {
+        if castling.contains(c) && mv & castle != 0 {
+            castling.remove(castling.find(c).unwrap());
+            if castling.len() == 0 { *castling = String::from("-"); }
+        }
+    };
+    remove_castle('K', K_SQUARES);
+    remove_castle('Q', Q_SQUARES);
+    remove_castle('k', k_SQUARES);
+    remove_castle('q', q_SQUARES);
 }

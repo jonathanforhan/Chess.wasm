@@ -7,6 +7,8 @@
   "license": "MIT",
   "scripts": {
     "build": "wasm-pack build --target web",
-    "perft": "cargo test --profile perft perft -- --nocapture"
+    "perft": "cargo test --profile perft perft -- --nocapture no-thread",
+    "perft-threaded": "cargo test --profile perft perft -- --nocapture threaded",
+    "perft-debug": "cargo test --profile perft perft -- --nocapture debug"
   }
 }

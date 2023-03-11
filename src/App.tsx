@@ -8,7 +8,7 @@ import useWindowDimensions from './hooks/use-window-dimensions.js';
 function App() {
   const _window = useWindowDimensions();
 
-  const [game, setGame] = useState(new Chess("8/k6K/8/8/8/8/pppppppp/8 w - - 0 1"));
+  const [game, setGame] = useState(new Chess("rn1q1k1r/pp1Rbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R b K - 0 8"));
   const [turn, setTurn] = useState(false);
 
   function oppTurn() {
@@ -16,6 +16,7 @@ function App() {
     let moves = gameCopy.moves();
     let i = Math.floor(Math.random() * moves.length);
     console.log(gameCopy.fen())
+    console.log(moves);
     if(moves.length === 0) {
       alert("Game Over");
       return;

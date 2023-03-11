@@ -10,8 +10,7 @@ use crate::game::{
     },
 };
 
-pub fn gen_moves(info: &mut GameInfo, game: &Game) -> Vec<Pieces> {
-    let mut moves: Vec::<Pieces> = Vec::new();
+pub fn gen_moves(info: &mut GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
     for piece in &game.pieces {
         if game.turn == *piece.color() {
             match piece {
@@ -37,6 +36,7 @@ pub fn gen_moves(info: &mut GameInfo, game: &Game) -> Vec<Pieces> {
 
             for m in piece.moves(&((info.team_pieces & !info.king.bits()) | info.opp_pieces), &0u128) {
                 info.opp_attacks |= m.bits() ^ piece.bits();
+
                 match m {
                     Pieces::Bishop(_) =>
                         info.opp_diagonal |= piece.bits(),
@@ -51,6 +51,4 @@ pub fn gen_moves(info: &mut GameInfo, game: &Game) -> Vec<Pieces> {
             }
         }
     }
-    moves
 }
-

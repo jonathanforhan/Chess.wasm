@@ -35,34 +35,53 @@ pub fn moves(fen: &str) -> Result<js_sys::Array, JsError> {
 
     let arr = js_sys::Array::new();
 
-    let mvs = game.moves();
-    for m in mvs {
-        let src = current & m.bits();  // find the matching starting location
+    for mut m in game.moves() {
+        match *m.bits() {
+            castle::K_ZONE => { m.set_bits(&castle::K_MOVE); }
+            castle::Q_ZONE => { m.set_bits(&castle::Q_MOVE); }
+            castle::k_ZONE => { m.set_bits(&castle::k_MOVE); }
+            castle::q_ZONE => { m.set_bits(&castle::q_MOVE); }
+            _ => ()
+        }
+        let mut src = current & m.bits();  // find the matching starting location
         let mut dst = m.bits() & !src; // subtract starting pos from move map
         let mut promotion = 0u128;
+        let mut pawn = false;
         if let Pieces::Pawn(_) = m {
+            pawn = true;
             match m.color() {
-                Color::White => dst &= !promote::BLACK_BACK_RANK,
-                Color::Black => dst &= !promote::WHITE_BACK_RANK,
+                Color::White => {
+                    dst &= !promote::BLACK_BACK_RANK;
+                    src &= !promote::BLACK_BACK_RANK;
+                },
+                Color::Black => {
+                    dst &= !promote::WHITE_BACK_RANK;
+                    src &= !promote::WHITE_BACK_RANK;
+                },
             }
             promotion |= m.bits() ^ (src | dst);
         }
 
-        let promotion = match promotion {
-            promote::WHITE_ROOK => "W",
+        let mut promotion = match promotion {
+            promote::WHITE_ROOK => "R",
             promote::WHITE_BISHOP => "B",
             promote::WHITE_KNIGHT => "N",
-            promote::BLACK_ROOK => "w",
+            promote::BLACK_ROOK => "r",
             promote::BLACK_BISHOP => "b",
             promote::BLACK_KNIGHT => "n",
             _ => "",
         };
-        /* TODO */
-        // opponent castling javascript wrapper
 
         // Convert bits to string
-        let (from, to) = (bits_to_algebraic(&src)?, bits_to_algebraic(&dst)?);
         let obj = js_sys::Object::new();
+
+        let (from ,to) = (bits_to_algebraic(&src)?, bits_to_algebraic(&dst)?);
+        if pawn && promotion == "" && to.contains("1") {
+            match m.color() {
+                Color::White => promotion = "Q",
+                Color::Black => promotion = "q",
+            }
+        }
 
         // Wrap in JS object
         js_sys::Reflect::set(&obj, &"from".into(), &JsValue::from_str(&from))
@@ -96,10 +115,10 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
         .map_err(|_| JsError::new("Wasm object access error"))?;
 
     let src = algebraic_to_bits(JsValue::as_string(&from)
-        .ok_or_else(|| JsError::new("Move parse error"))?)?;
+                                .ok_or_else(|| JsError::new("Move parse error"))?)?;
 
     let dst = algebraic_to_bits(JsValue::as_string(&to)
-        .ok_or_else(|| JsError::new("Move parse error"))?)?;
+                                .ok_or_else(|| JsError::new("Move parse error"))?)?;
 
     let promotion = JsValue::as_string(&promotion)
         .ok_or_else(|| JsError::new("Wasm object access error"))?;

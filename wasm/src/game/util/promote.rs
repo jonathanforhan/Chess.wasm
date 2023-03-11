@@ -5,6 +5,10 @@ use crate::game::pieces::{
     Piece,
     Pieces,
     Pawn,
+    Bishop,
+    Knight,
+    Rook,
+    Queen,
 };
 
 pub mod constants {
@@ -45,4 +49,25 @@ pub fn add_promotions(mvs: &Vec<Pieces>, color: Color) -> Vec<Pieces> {
         }
     }
     return moves;
+}
+
+pub fn try_promote (piece: &mut Pieces, mv: &u128, turn: Color) {
+    if mv & (BLACK_BACK_RANK | WHITE_BACK_RANK) == 0 { return; }
+    if turn == White {
+        let mv = mv & BLACK_BACK_RANK; // isolate identifier bit
+        match mv {
+            WHITE_BISHOP => *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), White)),
+            WHITE_KNIGHT => *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), White)),
+            WHITE_ROOK => *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), White)),
+            _ => *piece = Pieces::Queen(Queen::from_bits(*piece.bits(), White))
+        }
+    } else { // Black
+        let mv = mv & WHITE_BACK_RANK; // isolate identifier bit
+        match mv {
+            BLACK_BISHOP => *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), Black)),
+            BLACK_KNIGHT => *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), Black)),
+            BLACK_ROOK => *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), Black)),
+            _ => *piece = Pieces::Queen(Queen::from_bits(*piece.bits(), Black))
+        }
+    }
 }

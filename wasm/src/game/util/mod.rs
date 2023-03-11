@@ -18,7 +18,6 @@ pub struct GameInfo<'a> {
     pub king: &'a Pieces,
     pub check: bool,
     pub team_pieces: u128,
-    pub team_attacks: u128,
     pub opp_pieces: u128,
     pub opp_attacks: u128,
 
@@ -32,7 +31,7 @@ impl<'a> GameInfo<'a> {
         let mut king: Option<&'a Pieces> = None;
         let check = false;
         let (mut team_pieces, mut opp_pieces) = (0u128, 0u128);
-        let (team_attacks, opp_attacks) = (0u128, 0u128);
+        let opp_attacks = 0u128;
         let (opp_diagonal, opp_straight) = (0u128, 0u128);
 
         for piece in &game.pieces {
@@ -53,7 +52,6 @@ impl<'a> GameInfo<'a> {
             king: king.unwrap(),
             check,
             team_pieces,
-            team_attacks,
             opp_pieces,
             opp_attacks,
             opp_diagonal,

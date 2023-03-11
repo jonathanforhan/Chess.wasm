@@ -5,7 +5,7 @@ pub mod perft;
 #[allow(unused_imports)]
 use super::game::{
     *,
-    pieces::*,
+    pieces::{Color, *},
     notation::*,
     util::*,
 };
@@ -13,52 +13,29 @@ use super::game::{
 /* cargo test [TEST NAME] -- --nocapture */
 #[test]
 fn test_fen() {
-    let game = fen::decode("8/5k2/3p4/1p1Pp2p/pP2Pp1P/P4P1K/8/8 b - - 99 50").unwrap();
-    let fen = fen::encode(&game).unwrap();
-    assert_eq!(fen, "8/5k2/3p4/1p1Pp2p/pP2Pp1P/P4P1K/8/8 b - - 99 50".to_string());
+    let fen = "r3k3/p1pNqpbr/bn2Pnp1/8/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQq - 0 2";
+    let game = fen::decode(fen).unwrap();
+    let fen_encoded = fen::encode(&game).unwrap();
+
+    assert_eq!(fen, fen_encoded);
 }
 
 #[test]
-fn test_moves() {
-    // r2q1b2/1Q3kp1/pp4p1/2p1K1P1/8/7B/PPP1PP1P/RNB4R w - - 1 19 <--- Check Error
-    let mut game = fen::decode("8/k6K/8/8/8/8/pppppppp/8 b - - 0 1").unwrap();
+fn test_move() {
+    let game = fen::decode("4k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/P2P2PP/r2Q1R1K w k - 0 2").unwrap();
     let (mut w, mut b) = (0, 0);
     game.debug(&mut w, &mut b);
 
-    print_bits(&(w|b), 'o');
-
-    let src = algebraic_to_bits("d5".into()).unwrap();
-    let dst = algebraic_to_bits("c4".into()).unwrap();
-
-    game.move_piece(src | dst);
-
-    let (mut w, mut b) = (0, 0);
-    game.debug(&mut w, &mut b);
     print_bits(&(w|b), 'o');
 
     let mv = game.moves();
     for m in &mv {
-        print_bits(m.bits(), 'x');
+        if let Pieces::Pawn(_) = m {
+            print_bits(&m.bits(), 'x');
+        }
     }
+
     println!("{}", mv.len());
-}
-
-#[test]
-fn test_en_passant() {
-    let mut game = fen::decode("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-
-    let src = algebraic_to_bits("a2".into()).unwrap();
-    let dst = algebraic_to_bits("a4".into()).unwrap();
-
-    game.move_piece(src | dst);
-
-    let (mut w, mut b) = (0u128, 0u128);
-
-    game.debug(&mut w, &mut b);
-
-    print_bits(&(w | b), 'x');
-    print_bits(&game.en_passant_square, 'e');
-    println!("{}", bits_to_algebraic(&game.en_passant_square).unwrap());
 }
 
 pub fn print_bits(x: &u128, c: char) {
