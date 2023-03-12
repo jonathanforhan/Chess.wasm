@@ -5,7 +5,7 @@ pub mod perft;
 #[allow(unused_imports)]
 use super::game::{
     *,
-    pieces::{Color, *},
+    pieces::{Color::*, *},
     notation::*,
     util::*,
 };
@@ -24,7 +24,12 @@ fn test_fen() {
 fn test_move() {
     let game = fen::decode("r3r1k1/p1ppqpb1/bn2Pnp1/4N3/1p2P3/2N2Q1p/PPPBBPPP/R4K1R b - - 0 2").unwrap();
     let (mut w, mut b) = (0, 0);
-    game.debug(&mut w, &mut b);
+    for p in &game.pieces {
+        match p.color() {
+            White => w |= p.bits(),
+            Black => b |= p.bits(),
+        }
+    }
 
     print_bits(&(w|b), 'o');
 

@@ -5,6 +5,7 @@ pub mod constants {
 }
 pub use constants::*;
 
+#[inline]
 pub fn add_en_passant (mv: &u128) -> Option<u128> {
     if mv & WHITE_EN_PASSANT == *mv {
         let ep = mv & (0xff00 << 0x10);

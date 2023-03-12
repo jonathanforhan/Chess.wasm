@@ -1,5 +1,5 @@
 use super::{Piece, Pieces, Color};
-use crate::MASK;
+use crate::{MASK, game::util::promote};
 
 #[derive(Clone)]
 pub struct Pawn {
@@ -64,7 +64,9 @@ impl Piece for Pawn {
             if test & MASK == 0 { return false; }
             if test & team != 0 { return false; }
             if test & opp  != 0 { return false; }
-            moves.push(Pieces::Pawn(Pawn { bits: test | bits, color: *color}));
+            let mv = Pieces::Pawn(Pawn { bits: test | bits, color: *color});
+            promote::add_promotions(&mv , moves);
+            moves.push(mv);
             return true;
         };
 

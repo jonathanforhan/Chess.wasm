@@ -1,3 +1,5 @@
+use crate::game::util::castle::*;
+
 use super::{
     FenError,
     validate,
@@ -52,7 +54,11 @@ pub fn decode<'a>(fen: &str) -> Result<Game, FenError<'a>> {
         _ => throw()
     };
 
-    let castling = fen[2].to_string();
+    let mut castling = 0u16;
+    if fen[2].contains('K') { castling += K_ID; }
+    if fen[2].contains('Q') { castling += Q_ID; }
+    if fen[2].contains('k') { castling += k_ID; }
+    if fen[2].contains('q') { castling += q_ID; }
 
     let mut en_passant_square: u128 = 0;
     let en_passant = fen[3];

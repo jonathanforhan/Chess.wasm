@@ -1,3 +1,5 @@
+use crate::game::util::castle;
+
 use super::{validate, FenError};
 
 use super::super::{
@@ -80,7 +82,15 @@ pub fn encode<'a>(game: &Game) -> Result<String, FenError<'a>> {
     };
     fen.push(color);
     fen.push(' ');
-    fen.push_str(&game.castling);
+
+    let mut castling = String::new();
+    if game.castling & castle::K_ID != 0 { castling.push('K'); }
+    if game.castling & castle::Q_ID != 0 { castling.push('Q'); }
+    if game.castling & castle::k_ID != 0 { castling.push('k'); }
+    if game.castling & castle::q_ID != 0 { castling.push('q'); }
+    if game.castling == 0 { castling.push('-'); }
+    fen.push_str(castling.as_str());
+
     fen.push(' ');
     if game.en_passant_square != 0 {
         fen.push_str(&bits_to_algebraic(&game.en_passant_square).unwrap_or("-".to_string()));

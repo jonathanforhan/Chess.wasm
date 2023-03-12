@@ -118,16 +118,16 @@ pub fn move_piece(fen: &str, obj: js_sys::Object) -> Result<String, JsError> {
     let mut mv = src | dst;
 
     // Check castle move
-    if mv == castle::K_MOVE && game.castling.contains("K") {
+    if mv == castle::K_MOVE && game.castling & castle::K_ID != 0 {
         mv = castle::K_ZONE;
     }
-    else if mv == castle::Q_MOVE && game.castling.contains("Q") {
+    else if mv == castle::Q_MOVE && game.castling & castle::Q_ID != 0 {
         mv = castle::Q_ZONE;
     }
-    else if mv == castle::k_MOVE && game.castling.contains("k") {
+    else if mv == castle::k_MOVE && game.castling & castle::k_ID != 0 {
         mv = castle::k_ZONE;
     }
-    else if mv == castle::q_MOVE && game.castling.contains("q") {
+    else if mv == castle::q_MOVE && game.castling & castle::q_ID != 0 {
         mv = castle::q_ZONE;
     }
 

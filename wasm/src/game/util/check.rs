@@ -1,4 +1,4 @@
-use crate::{game::{
+use crate::game::{
     pieces::{
         Color::*,
         Piece,
@@ -9,11 +9,12 @@ use crate::{game::{
         Queen,
     },
     Game,
-}};
+};
 use super::GameInfo;
 
 // removes moves that are moving a pinned peice
 // returns bool to be used in filter method
+#[inline]
 pub fn filter_pins(info: &GameInfo, game: &Game, mv: &u128) -> bool {
     let diagonal = Pieces::Bishop(Bishop::from_bits(*info.king.bits(), game.turn));
     let straight = Pieces::Rook(Rook::from_bits(*info.king.bits(), game.turn));
@@ -115,7 +116,7 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
         if game.turn == *piece.color() {
             if let Pieces::King(_) = piece { continue; }
 
-            let mut piece_moves = Vec::with_capacity(24);
+            let mut piece_moves = Vec::with_capacity(32);
             piece.moves(&info.opp_pieces, &info.team_pieces, &mut piece_moves);
             for mv in piece_moves {
                 if mv.bits() & rays != 0 { moves.push(mv); }

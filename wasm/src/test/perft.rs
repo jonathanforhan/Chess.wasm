@@ -44,10 +44,10 @@ pub fn perft() {
             debug(game, depth);
 
             /* FAILING */
-            let game = fen::decode("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1").unwrap();
-            debug(game, depth);
-            let game = fen::decode("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
-            debug(game, depth);
+            //let game = fen::decode("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1").unwrap();
+            //debug(game, depth);
+            //let game = fen::decode("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
+            //debug(game, depth);
             /* * * * * */
 
             let game = fen::decode("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 ").unwrap();
@@ -90,7 +90,7 @@ pub fn perft() {
         if depth <= 1 { return moves.len(); }
 
         let perft = Arc::new(Mutex::new(0usize));
-        let mut handles: Vec<JoinHandle<()>> = Vec::new();
+        let mut handles: Vec<JoinHandle<()>> = Vec::with_capacity(8);
         let m = moves.len();
         let n = m / threads;
 

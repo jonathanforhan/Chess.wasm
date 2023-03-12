@@ -27,6 +27,7 @@ pub struct GameInfo<'a> {
 }
 
 impl<'a> GameInfo<'a> {
+    #[inline]
     pub fn init(game: &'a Game) -> Self {
         let mut king: Option<&'a Pieces> = None;
         let check = false;

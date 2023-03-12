@@ -1,9 +1,6 @@
 use crate::game::{
     Game,
-    util::{
-        GameInfo,
-        promote
-    },
+    util::GameInfo,
     pieces::{
         Piece,
         Pieces,
@@ -16,11 +13,8 @@ pub fn gen_moves(info: &mut GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
             match piece {
                 Pieces::King(_) => (),
                 Pieces::Pawn(p) => {
-                    let mut pawn_moves: Vec<Pieces> = Vec::with_capacity(24);
-                    p.moves(&(info.opp_pieces | game.en_passant_square), &info.team_pieces, &mut pawn_moves);
-                    // adds promotion options to mvs
-                    promote::add_promotions(game.turn, &mut pawn_moves);
-                    moves.append(&mut pawn_moves);
+                    let opp = info.opp_pieces | game.en_passant_square;
+                    p.moves(&opp, &info.team_pieces, moves);
                 },
                 _ => piece.moves(&info.opp_pieces, &info.team_pieces, moves),
             }

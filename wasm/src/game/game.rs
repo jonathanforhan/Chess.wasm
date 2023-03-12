@@ -1,5 +1,4 @@
 use std::io::{Result, Error};
-use smallvec::SmallVec;
 use super::{
     pieces::{
         Color,
@@ -15,7 +14,7 @@ use super::{
 pub struct Game {
     pub pieces: Vec<Pieces>,
     pub turn: Color,
-    pub castling: String,
+    pub castling: u16,
     pub en_passant_square: u128,
     pub half_moves: u16,
     pub move_count: u16,
@@ -25,7 +24,7 @@ impl Game {
     pub fn new(
         pieces: Vec<Pieces>,
         turn: Color,
-        castling: String,
+        castling: u16,
         en_passant_square: u128,
         half_moves: u16,
         move_count: u16
@@ -33,20 +32,11 @@ impl Game {
         Game { pieces, turn, castling, en_passant_square, half_moves, move_count }
     }
 
-    pub fn debug(&self, white_pieces: &mut u128, black_pieces: &mut u128) {
-        for piece in &self.pieces {
-            match piece.color() {
-                White => *white_pieces |= piece.bits(),
-                Black => *black_pieces |= piece.bits(),
-            }
-        }
-    }
-
     /* Moves are added independent of color using team and opp prefixes
      * essentially treating the color's turn as maximizing or minimizing
      */
     pub fn moves(&self) -> Vec<Pieces> {
-        let mut moves: Vec<Pieces> = Vec::with_capacity(42);
+        let mut moves: Vec<Pieces> = Vec::with_capacity(64);
         let mut info = GameInfo::init(&self);
 
         /* Add moves, save king to be evaluated later
@@ -70,7 +60,7 @@ impl Game {
          */
         if !info.check {
             let obstacles = (info.opp_attacks & !castle::EDGE_CASE) | info.opp_pieces | info.team_pieces;
-            castle::add_castling(&self.castling, &obstacles, self.turn, &mut moves);
+            castle::add_castling(self.castling, &obstacles, self.turn, &mut moves);
         }
 
         /* trim moves to disgard moving pinned pieces
@@ -118,10 +108,11 @@ impl Game {
                     promote::try_promote(piece, &mv, self.turn);
                 }
 
-                if self.castling == "-" {
+                if self.castling == 0 {
                     piece.set_bits(&(piece.bits() ^ mv));
                     continue;
                 }
+
                 match mv {
                     castle::K_ZONE => castle::try_castle(piece, castle::K_MOVE, castle::K_ROOK),
                     castle::Q_ZONE => castle::try_castle(piece, castle::Q_MOVE, castle::Q_ROOK),
@@ -130,7 +121,7 @@ impl Game {
                     _ => piece.set_bits(&(piece.bits() ^ mv))
                 };
 
-                castle::fix_castle(&mut self.castling, &mv);
+                self.castling = castle::fix_castle(self.castling, &mv);
             }
             else if piece.bits() & !mv == 0 {
                 remove = Some(i);
