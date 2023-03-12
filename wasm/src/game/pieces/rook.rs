@@ -1,5 +1,5 @@
 use super::{Piece, Pieces, Color};
-use crate::MASK;
+use crate::game::MASK;
 
 #[derive(Clone)]
 pub struct Rook {

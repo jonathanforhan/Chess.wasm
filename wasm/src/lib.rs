@@ -1,7 +1,7 @@
 pub mod chess;
 pub mod game;
-pub use game::MASK;
-pub mod test;
+pub mod engine;
+mod test;
 
 /******************/
 /*                */

@@ -1,5 +1,5 @@
 use super::{Piece, Pieces, Color};
-use crate::{MASK, game::util::promote};
+use crate::{game::MASK, game::util::promote};
 
 #[derive(Clone)]
 pub struct Pawn {
