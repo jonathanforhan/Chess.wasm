@@ -126,14 +126,14 @@ impl Game {
             else if piece.bits() & !mv == 0 {
                 remove = Some(i);
             }
-            else if let Pieces::Pawn(_) = piece {
-                if self.en_passant_square & mv == 0 { continue; }
+            else if self.en_passant_square & mv == 0 { continue; }
+            else if let Pieces::Pawn(p) = piece {
                 let en_passant_square: u128;
-                match piece.color() {
+                match p.color() {
                     White => en_passant_square = self.en_passant_square << 0x10,
                     Black => en_passant_square = self.en_passant_square >> 0x10,
                 }
-                if piece.bits() & en_passant_square != 0 {
+                if p.bits() & en_passant_square != 0 {
                     two_pawn_moves.1 = true;
                     ep_remove = Some(i);
                 }

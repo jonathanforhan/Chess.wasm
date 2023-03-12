@@ -33,37 +33,43 @@ pub use constants::*;
 
 #[inline]
 pub fn add_promotions(mv: &Pieces, moves: &mut Vec<Pieces>) {
-    if *mv.color() == White {
-        if mv.bits() & WHITE_BACK_RANK == 0 { return; }
-        moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_ROOK, White)));
-        moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_KNIGHT, White)));
-        moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_BISHOP, White)));
-    } else { // Black
-        if mv.bits() & BLACK_BACK_RANK == 0 { return; }
-        moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_ROOK, Black)));
-        moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_KNIGHT, Black)));
-        moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_BISHOP, Black)));
+    match mv.color() {
+        White => {
+            if mv.bits() & WHITE_BACK_RANK == 0 { return; }
+            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_ROOK, White)));
+            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_KNIGHT, White)));
+            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_BISHOP, White)));
+        },
+        Black => {
+            if mv.bits() & BLACK_BACK_RANK == 0 { return; }
+            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_ROOK, Black)));
+            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_KNIGHT, Black)));
+            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_BISHOP, Black)));
+        }
     }
 }
 
 #[inline]
 pub fn try_promote (piece: &mut Pieces, mv: &u128, turn: Color) {
     if mv & (BLACK_BACK_RANK | WHITE_BACK_RANK) == 0 { return; }
-    if turn == White {
-        let mv = mv & BLACK_BACK_RANK; // isolate identifier bit
-        match mv {
-            WHITE_BISHOP => *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), White)),
-            WHITE_KNIGHT => *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), White)),
-            WHITE_ROOK => *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), White)),
-            _ => *piece = Pieces::Queen(Queen::from_bits(*piece.bits(), White))
-        }
-    } else { // Black
-        let mv = mv & WHITE_BACK_RANK; // isolate identifier bit
-        match mv {
-            BLACK_BISHOP => *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), Black)),
-            BLACK_KNIGHT => *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), Black)),
-            BLACK_ROOK => *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), Black)),
-            _ => *piece = Pieces::Queen(Queen::from_bits(*piece.bits(), Black))
+    match turn {
+        White => {
+            let mv = mv & BLACK_BACK_RANK; // isolate identifier bit
+            match mv {
+                WHITE_BISHOP => *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), White)),
+                WHITE_KNIGHT => *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), White)),
+                WHITE_ROOK => *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), White)),
+                _ => *piece = Pieces::Queen(Queen::from_bits(*piece.bits(), White))
+            }
+        },
+        Black => {
+            let mv = mv & WHITE_BACK_RANK; // isolate identifier bit
+            match mv {
+                BLACK_BISHOP => *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), Black)),
+                BLACK_KNIGHT => *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), Black)),
+                BLACK_ROOK => *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), Black)),
+                _ => *piece = Pieces::Queen(Queen::from_bits(*piece.bits(), Black))
+            }
         }
     }
 }

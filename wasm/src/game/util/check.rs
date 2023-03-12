@@ -90,19 +90,18 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
             let king_map = Pieces::Rook(Rook::from_bits(*info.king.bits(), game.turn));
             rays = calc_rays(&king_map, &attack);
         },
-        Pieces::Queen(_) => {
+        Pieces::Queen(q) => {
             attack = 0u128;
-            let piece = Pieces::Bishop(Bishop::from_bits(*attackers[0].bits(), game.turn));
+            let piece = Pieces::Bishop(Bishop::from_bits(*q.bits(), game.turn));
             piece.moves_as_bits(&info.team_pieces, &info.opp_pieces, &mut attack);
 
             let king_map = Pieces::Bishop(Bishop::from_bits(*info.king.bits(), game.turn));
             rays = calc_rays(&king_map, &attack);
 
             // check if queen is attacking on diagonal, if not use rook attacks
-            let queen = attackers[0];
-            if rays & (info.king.bits() | queen.bits()) != info.king.bits() | queen.bits() {
+            if rays & (info.king.bits() | q.bits()) != info.king.bits() | q.bits() {
                 attack = 0u128;
-                let piece = Pieces::Rook(Rook::from_bits(*attackers[0].bits(), game.turn));
+                let piece = Pieces::Rook(Rook::from_bits(*q.bits(), game.turn));
                 piece.moves_as_bits(&info.team_pieces, &info.opp_pieces, &mut attack);
 
                 let king_map = Pieces::Rook(Rook::from_bits(*info.king.bits(), game.turn));

@@ -1,18 +1,16 @@
+mod debug;
 #[cfg(test)]
-#[allow(unused_imports)]
+pub mod test {
 use crate::game::{
     *,
     pieces::*,
 };
-#[allow(unused_imports)]
 use std::{
     thread,
     thread::JoinHandle,
     sync::{Arc, Mutex},
 };
-mod debug;
-#[allow(unused_imports)]
-use debug::debug;
+use super::debug::test::debug;
 
 /* More info on Perft test can be found at:
  * https://www.chessprogramming.org/Perft_Results
@@ -117,4 +115,5 @@ pub fn perft() {
 
         return *perft.lock().unwrap();
     }
+}
 }

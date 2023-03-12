@@ -2,6 +2,8 @@
  * for debug this engine
  */
 
+#[cfg(test)]
+pub mod test {
 use crate::game::{
     *,
     pieces::{*, Color::*},
@@ -39,9 +41,9 @@ fn uci_moves(game: &Game) -> Vec<String> {
         let mut dst = m.bits() & !src; // subtract starting pos from move map
         let mut promotion = 0u128;
         let mut pawn = false;
-        if let Pieces::Pawn(_) = m {
+        if let Pieces::Pawn(p) = m {
             pawn = true;
-            match m.color() {
+            match p.color() {
                 Color::White => {
                     dst &= !promote::BLACK_BACK_RANK;
                     src &= !promote::BLACK_BACK_RANK;
@@ -51,7 +53,7 @@ fn uci_moves(game: &Game) -> Vec<String> {
                     src &= !promote::WHITE_BACK_RANK;
                 },
             }
-            promotion |= m.bits() ^ (src | dst);
+            promotion |= p.bits() ^ (src | dst);
         }
 
         let mut promotion = match promotion {
@@ -139,4 +141,5 @@ pub fn debug(game: Game, depth: u32) {
         game_copy.move_piece(*m.bits());
         debug(game_copy, depth-1);
     }
+}
 }

@@ -1,13 +1,9 @@
-pub mod perft;
-
-
+mod perft;
 #[cfg(test)]
-#[allow(unused_imports)]
-use super::game::{
-    *,
+mod test {
+use super::super::game::{
+    fen,
     pieces::{Color::*, *},
-    notation::*,
-    util::*,
 };
 
 /* cargo test [TEST NAME] -- --nocapture */
@@ -35,8 +31,8 @@ fn test_move() {
 
     let mv = game.moves();
     for m in &mv {
-        if let Pieces::Rook(_) = m {
-            print_bits(&m.bits(), 'x');
+        if let Pieces::Rook(r) = m {
+            print_bits(&r.bits(), 'x');
         }
     }
 
@@ -55,4 +51,5 @@ pub fn print_bits(x: &u128, c: char) {
         print!("\n");
     }
     print!("\n");
+}
 }
