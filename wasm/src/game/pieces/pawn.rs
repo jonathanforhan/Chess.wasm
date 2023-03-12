@@ -16,6 +16,7 @@ impl Pawn {
         Pawn { bits, color }
     }
 
+    #[inline]
     pub fn attacks(&self, attacks: &mut u128) {
         let bits = &self.bits;
         let color = &self.color;
@@ -55,15 +56,14 @@ impl Piece for Pawn {
         let color = &self.color;
 
         let validate_attack = |test: u128, moves: &mut Vec<Pieces>| {
-            if test & MASK == 0 { return; }
-            if test & opp == 0 { return; }
-            moves.push(Pieces::Pawn(Pawn { bits: test | bits, color: *color }));
+            if test & MASK & opp == 0 { return; }
+            let mv = Pieces::Pawn(Pawn { bits: test | bits, color: *color});
+            promote::add_promotions(&mv , moves);
+            moves.push(mv);
         };
 
         let validate_move = |test: u128, moves: &mut Vec<Pieces>| -> bool {
-            if test & MASK == 0 { return false; }
-            if test & team != 0 { return false; }
-            if test & opp  != 0 { return false; }
+            if test & MASK & !team & !opp == 0 { return false; }
             let mv = Pieces::Pawn(Pawn { bits: test | bits, color: *color});
             promote::add_promotions(&mv , moves);
             moves.push(mv);
@@ -95,15 +95,13 @@ impl Piece for Pawn {
         let color = &self.color;
 
         let validate_attack = |test: u128, moves: &mut u128| {
-            if test & MASK == 0 { return; }
-            if test & opp == 0 { return; }
-            *moves |= test | bits;
+            if test & MASK & opp != 0 {
+                *moves |= test | bits;
+            }
         };
 
         let validate_move = |test: u128, moves: &mut u128| -> bool {
-            if test & MASK == 0 { return false; }
-            if test & team != 0 { return false; }
-            if test & opp  != 0 { return false; }
+            if test & MASK & !team & !opp == 0 { return false; }
             *moves |= test | bits;
             return true;
         };
@@ -133,15 +131,13 @@ impl Piece for Pawn {
         let color = &self.color;
 
         let validate_attack = |test: u128, moves: &mut u128| {
-            if test & MASK == 0 { return; }
-            if test & opp == 0 { return; }
-            *moves |= test;
+            if test & MASK & opp != 0 {
+                *moves |= test;
+            }
         };
 
         let validate_move = |test: u128, moves: &mut u128| -> bool {
-            if test & MASK == 0 { return false; }
-            if test & team != 0 { return false; }
-            if test & opp  != 0 { return false; }
+            if test & MASK & !team & !opp == 0 { return false; }
             *moves |= test;
             return true;
         };

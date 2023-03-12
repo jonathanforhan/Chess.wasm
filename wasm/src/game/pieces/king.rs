@@ -12,8 +12,6 @@ impl King {
         King { bits: 1 << (y << 4) + 8 + x, color }
     }
 
-    // from-bits exists for faster creation like castling and promotions
-    // this is to speed up move gen
     pub fn from_bits(bits: u128, color: Color) -> Self {
         King { bits, color }
     }
@@ -40,13 +38,10 @@ impl Piece for King {
         let bits = &self.bits;
         let color = &self.color;
 
-        let mut validate = |test: &u128| {
-            if test & MASK == 0 { return; }
-            if test & (team | opp) != 0 { return; }
-            moves.push(Pieces::King(King { bits: *test | bits, color: *color }));
+        let mut test_move = |test: u128| {
+            if test & MASK & !(team | opp) == 0 { return; }
+            moves.push(Pieces::King(King { bits: test | bits, color: *color }));
         };
-
-        let mut test_move = |test: u128| { validate(&test); };
 
         /* North */
         test_move(bits << 0x10);
@@ -80,13 +75,10 @@ impl Piece for King {
          */
         let bits = &self.bits;
 
-        let mut validate = |test: &u128| {
-            if test & MASK == 0 { return; }
-            if test & (team | opp) != 0 { return; }
-            *moves |= *test | bits;
+        let mut test_move = |test: u128| {
+            if test & MASK & !(team | opp) != 0 { return; }
+            *moves |= test | bits;
         };
-
-        let mut test_move = |test: u128| { validate(&test); };
 
         /* North */
         test_move(bits << 0x10);
@@ -120,13 +112,9 @@ impl Piece for King {
          */
         let bits = &self.bits;
 
-        let mut validate = |test: &u128| {
-            if test & MASK == 0 { return; }
-            if test & (team | opp) != 0 { return; }
-            *moves |= *test;
+        let mut test_move = |test: u128| {
+            *moves |= test & MASK & !(team | opp);
         };
-
-        let mut test_move = |test: u128| { validate(&test); };
 
         /* North */
         test_move(bits << 0x10);

@@ -16,15 +16,15 @@ impl Rook {
         Rook { bits, color }
     }
 
-    fn test_move<F, G>(&self, condition: F, validation: &mut G)
-        where F: Fn(i32) -> u128, G: FnMut(&u128) -> bool {
+    #[inline]
+    fn test_move<F, G, T>(&self, condition: F, validation: G, moves: &mut T)
+        where F: Fn(i32) -> u128, G: Fn(&u128, &mut T) -> bool {
 
             for i in 1..8 {
                 let test = condition(i);
-                if !validation(&test) { break; }
+                if !validation(&test, moves) { break; }
             }
         }
-
 }
 
 impl Piece for Rook {
@@ -42,73 +42,71 @@ impl Piece for Rook {
 
     fn moves(&self, opp: &u128, team: &u128, moves: &mut Vec<Pieces>) {
         let bits = &self.bits;
+        let color = self.color();
 
-        let mut validate = |test: &u128| -> bool {
-            if test & MASK == 0 { return false; }
-            if test & team != 0 { return false; }
-            if test & opp  != 0 { moves.push(Pieces::Rook(Rook { bits: *test | bits, color: self.color })); return false; }
-            moves.push(Pieces::Rook(Rook { bits: *test | bits, color: self.color }));
+        let validate = |test: &u128, moves: &mut Vec<Pieces>| -> bool {
+            if test & MASK & !team == 0 { return false; }
+            if test & opp  != 0 { moves.push(Pieces::Rook(Rook { bits: *test | bits, color: *color })); return false; }
+            moves.push(Pieces::Rook(Rook { bits: *test | bits, color: *color }));
             return true;
         };
 
         /* North */
-        self.test_move(|i: i32| { bits << (i << 4) }, &mut validate);
+        self.test_move(|i: i32| { bits << (i << 4) }, validate, moves);
 
         /* South */
-        self.test_move(|i: i32| { bits >> (i << 4) }, &mut validate);
+        self.test_move(|i: i32| { bits >> (i << 4) }, validate, moves);
 
         /* West */
-        self.test_move(|i: i32| { bits << i }, &mut validate);
+        self.test_move(|i: i32| { bits << i }, validate, moves);
 
         /* East */
-        self.test_move(|i: i32| { bits >> i }, &mut validate);
+        self.test_move(|i: i32| { bits >> i }, validate, moves);
     }
 
     fn moves_as_bits(&self, opp: &u128, team: &u128, moves: &mut u128) {
         let bits = &self.bits;
 
-        let mut validate = |test: &u128| -> bool {
-            if test & MASK == 0 { return false; }
-            if test & team != 0 { return false; }
+        let validate = |test: &u128, moves: &mut u128| -> bool {
+            if test & MASK & !team == 0 { return false; }
             if test & opp  != 0 { *moves |= *test | bits; return false; }
             *moves |= *test | bits;
             return true;
         };
 
         /* North */
-        self.test_move(|i: i32| { bits << (i << 4) }, &mut validate);
+        self.test_move(|i: i32| { bits << (i << 4) }, validate, moves);
 
         /* South */
-        self.test_move(|i: i32| { bits >> (i << 4) }, &mut validate);
+        self.test_move(|i: i32| { bits >> (i << 4) }, validate, moves);
 
         /* West */
-        self.test_move(|i: i32| { bits << i }, &mut validate);
+        self.test_move(|i: i32| { bits << i }, validate, moves);
 
         /* East */
-        self.test_move(|i: i32| { bits >> i }, &mut validate);
+        self.test_move(|i: i32| { bits >> i }, validate, moves);
     }
 
     fn moves_as_bits_exclusive(&self, opp: &u128, team: &u128, moves: &mut u128) {
         let bits = &self.bits;
 
-        let mut validate = |test: &u128| -> bool {
-            if test & MASK == 0 { return false; }
-            if test & team != 0 { return false; }
+        let validate = |test: &u128, moves: &mut u128| -> bool {
+            if test & MASK & !team == 0 { return false; }
             if test & opp  != 0 { *moves |= *test; return false; }
             *moves |= *test;
             return true;
         };
 
         /* North */
-        self.test_move(|i: i32| { bits << (i << 4) }, &mut validate);
+        self.test_move(|i: i32| { bits << (i << 4) }, validate, moves);
 
         /* South */
-        self.test_move(|i: i32| { bits >> (i << 4) }, &mut validate);
+        self.test_move(|i: i32| { bits >> (i << 4) }, validate, moves);
 
         /* West */
-        self.test_move(|i: i32| { bits << i }, &mut validate);
+        self.test_move(|i: i32| { bits << i }, validate, moves);
 
         /* East */
-        self.test_move(|i: i32| { bits >> i }, &mut validate);
+        self.test_move(|i: i32| { bits >> i }, validate, moves);
     }
 }

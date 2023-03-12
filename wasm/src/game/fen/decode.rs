@@ -1,7 +1,7 @@
 use crate::game::util::castle::*;
+use std::error::Error;
 
 use super::{
-    FenError,
     validate,
     super::{
         Game,
@@ -9,7 +9,7 @@ use super::{
     }
 };
 
-pub fn decode<'a>(fen: &str) -> Result<Game, FenError<'a>> {
+pub fn decode<'a>(fen: &str) -> Result<Game, Box<dyn Error>> {
     validate(fen)?;
     let throw = || {
          panic!("Fen Error not caught by fen validation")

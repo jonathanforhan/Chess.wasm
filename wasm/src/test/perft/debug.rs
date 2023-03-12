@@ -29,6 +29,7 @@ fn uci_moves(game: &Game) -> Vec<String> {
     let mut moves: Vec<String> = Vec::new();
 
     for mut m in game.moves() {
+        let m_copy = m.clone();
         match *m.bits() {
             castle::K_ZONE => m.set_bits(&castle::K_MOVE),
             castle::Q_ZONE => m.set_bits(&castle::Q_MOVE),
@@ -41,7 +42,7 @@ fn uci_moves(game: &Game) -> Vec<String> {
         let mut dst = m.bits() & !src; // subtract starting pos from move map
         let mut promotion = 0u128;
         let mut pawn = false;
-        if let Pieces::Pawn(p) = m {
+        if let Pieces::Pawn(p) = &m {
             pawn = true;
             match p.color() {
                 Color::White => {
@@ -67,8 +68,30 @@ fn uci_moves(game: &Game) -> Vec<String> {
         };
 
         // Convert bits to string
-        let from = bits_to_algebraic(&src).unwrap();
-        let to = bits_to_algebraic(&dst).unwrap();
+        let from = bits_to_algebraic(&src).unwrap_or_else(|e| {
+            let piece = match &m {
+                Pieces::Pawn(_) => 'p',
+                Pieces::Bishop(_) => 'b',
+                Pieces::Knight(_) => 'n',
+                Pieces::Rook(_) => 'r',
+                Pieces::Queen(_) => 'q',
+                Pieces::King(_) => 'k'
+            };
+            panic!("{},\nsrc: {},\ndst: {},\nfull-move: {},\npiece: {},\nmove unaltered: {},\nfen: {}\n",
+                   e, src, dst, m.bits(), piece, m_copy.bits(), fen::encode(&game).unwrap());
+        });
+        let to = bits_to_algebraic(&dst).unwrap_or_else(|e| {
+            let piece = match &m {
+                Pieces::Pawn(_) => 'p',
+                Pieces::Bishop(_) => 'b',
+                Pieces::Knight(_) => 'n',
+                Pieces::Rook(_) => 'r',
+                Pieces::Queen(_) => 'q',
+                Pieces::King(_) => 'k'
+            };
+            panic!("{},\nsrc: {},\ndst: {},\nfull-move: {},\npiece: {},\nmove unaltered: {},\nfen: {}\n",
+                   e, src, dst, m.bits(), piece, m_copy.bits(), fen::encode(&game).unwrap());
+        });
         if pawn && promotion.is_empty() {
             if game.turn == White && to.contains("8") {
                 promotion = "q";

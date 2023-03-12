@@ -33,18 +33,19 @@ pub use constants::*;
 
 #[inline]
 pub fn add_promotions(mv: &Pieces, moves: &mut Vec<Pieces>) {
+    let bits = mv.bits();
     match mv.color() {
         White => {
-            if mv.bits() & WHITE_BACK_RANK == 0 { return; }
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_ROOK, White)));
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_KNIGHT, White)));
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | WHITE_BISHOP, White)));
+            if bits & WHITE_BACK_RANK == 0 { return; }
+            moves.push(Pieces::Pawn(Pawn::from_bits(bits | WHITE_ROOK, White)));
+            moves.push(Pieces::Pawn(Pawn::from_bits(bits | WHITE_KNIGHT, White)));
+            moves.push(Pieces::Pawn(Pawn::from_bits(bits | WHITE_BISHOP, White)));
         },
         Black => {
-            if mv.bits() & BLACK_BACK_RANK == 0 { return; }
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_ROOK, Black)));
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_KNIGHT, Black)));
-            moves.push(Pieces::Pawn(Pawn::from_bits(mv.bits() | BLACK_BISHOP, Black)));
+            if bits & BLACK_BACK_RANK == 0 { return; }
+            moves.push(Pieces::Pawn(Pawn::from_bits(bits | BLACK_ROOK, Black)));
+            moves.push(Pieces::Pawn(Pawn::from_bits(bits | BLACK_KNIGHT, Black)));
+            moves.push(Pieces::Pawn(Pawn::from_bits(bits | BLACK_BISHOP, Black)));
         }
     }
 }

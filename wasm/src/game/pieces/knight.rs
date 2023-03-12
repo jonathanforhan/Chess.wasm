@@ -34,8 +34,7 @@ impl Piece for Knight {
         let bits = &self.bits;
 
         let mut validate = |test: u128| {
-            if test & MASK == 0 { return; }
-            if test & team != 0 { return; }
+            if test & MASK & !team == 0 { return; }
             moves.push(Pieces::Knight(Knight { bits: test | bits, color: self.color }));
         };
 
@@ -55,8 +54,7 @@ impl Piece for Knight {
         let bits = &self.bits;
 
         let mut validate = |test: u128| {
-            if test & MASK == 0 { return; }
-            if test & team != 0 { return; }
+            if test & MASK & !team == 0 { return; }
             *moves |= test | bits;
         };
 
@@ -76,9 +74,7 @@ impl Piece for Knight {
         let bits = &self.bits;
 
         let mut validate = |test: u128| {
-            if test & MASK == 0 { return; }
-            if test & team != 0 { return; }
-            *moves |= test;
+            *moves |= test & MASK & !team;
         };
 
         let mut test_move = |x: u128| {

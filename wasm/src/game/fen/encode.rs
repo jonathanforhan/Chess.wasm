@@ -1,4 +1,5 @@
 use crate::game::util::castle;
+use std::error::Error;
 
 use super::{validate, FenError};
 
@@ -8,7 +9,7 @@ use super::super::{
     notation::bits_to_algebraic
 };
 
-pub fn encode<'a>(game: &Game) -> Result<String, FenError<'a>> {
+pub fn encode<'a>(game: &Game) -> Result<String, Box<dyn Error>> {
     let pos = |bits: u128| {
         for i in (0..128).step_by(16) {
             if bits >> i & 0xff00 != 0 {
@@ -25,7 +26,7 @@ pub fn encode<'a>(game: &Game) -> Result<String, FenError<'a>> {
     let mut board: Vec<Vec<char>> = vec![vec!['.'; 8]; 8];
 
     for p in game.pieces.iter() {
-        let xy = pos(*p.bits()).ok_or_else(|| FenError { error: "Invalid bit boards" })?;
+        let xy = pos(*p.bits()).ok_or_else(|| FenError("Invalid bit boards".into()))?;
         match p {
             Pieces::Pawn(p) => {
                 if *p.color() == Color::White { board[xy.1][xy.0] = 'P'; }

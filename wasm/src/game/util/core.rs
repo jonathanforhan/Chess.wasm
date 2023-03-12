@@ -22,13 +22,11 @@ pub fn gen_moves(info: &mut GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
             match piece {
                 Pieces::Pawn(p) => {
                     p.attacks(&mut info.opp_attacks);
-                    continue;
                 },
                 Pieces::King(k) => {
                     // enemy king should never come near king so all 
                     // king radius squares are opp attack squares
                     k.moves_as_bits_exclusive(&0u128, &0u128, &mut info.opp_attacks);
-                    continue;
                 }
                 Pieces::Knight(n) => {
                     let opp = (info.team_pieces & !info.king.bits()) | info.opp_pieces;

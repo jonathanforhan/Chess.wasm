@@ -1,4 +1,4 @@
-use core::fmt;
+use std::fmt;
 use std::error::Error;
 
 mod validate;
@@ -9,18 +9,12 @@ mod decode;
 pub use decode::decode;
 
 #[derive(Debug)]
-pub struct FenError<'a> {
-    pub error: &'a str,
-}
+pub struct FenError(String);
 
-impl<'a> fmt::Display for FenError<'a> {
+impl fmt::Display for FenError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Invalid Fen")
+        write!(f, "Fen Error: {}", self.0)
     }
 }
 
-impl<'a> Error for FenError<'a> {
-    fn description(&self) -> &'a str {
-        &self.error
-    }
-}
+impl Error for FenError {}

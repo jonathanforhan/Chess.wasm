@@ -19,12 +19,10 @@ pub fn filter_pins(info: &GameInfo, game: &Game, mv: &u128) -> bool {
     let diagonal = Pieces::Bishop(Bishop::from_bits(*info.king.bits(), game.turn));
     let straight = Pieces::Rook(Rook::from_bits(*info.king.bits(), game.turn));
 
-    let mut en_passant = 0u128;
-    if mv & game.en_passant_square != 0 {
-        match game.turn {
-            White => en_passant = game.en_passant_square >> 0x10,
-            Black => en_passant = game.en_passant_square << 0x10,
-        }
+    let en_passant;
+    match game.turn {
+        White => en_passant = (game.en_passant_square & mv) >> 0x10,
+        Black => en_passant = (game.en_passant_square & mv) << 0x10,
     }
 
     let test_diagonal = info.opp_diagonal & !mv;
@@ -50,20 +48,24 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
     let king_ray_maker = Pieces::Knight(Knight::from_bits(*info.king.bits(), game.turn));
     king_ray_maker.moves_as_bits(&info.opp_pieces, &info.team_pieces, &mut king_rays);
 
-    let mut attackers: Vec::<&Pieces> = Vec::new();
+    let mut attacker: Option<&Pieces> = None;
     let mut attack = 0u128;
     for piece in &game.pieces {
         let mut bits = 0u128;
         if game.turn != *piece.color() && piece.bits() & king_rays != 0 {
             piece.moves_as_bits(&info.team_pieces, &info.opp_pieces, &mut bits);
             if bits & info.king.bits() != 0 {
-                attackers.push(piece);
-                attack = bits;
+                if let None = attacker {
+                    attacker = Some(piece);
+                    attack = bits;
+                } else {
+                    // if attacker already assigned,
+                    // it's double-check and only king moves
+                    return;
+                }
             }
         }
     }
-
-    if attackers.len() > 1 { return; }
 
     let mut rays;
     /* Gen moves for king as if another peice and & them to
@@ -76,7 +78,9 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
         return piece_rays & attack;
     };
 
-    match attackers[0] {
+    #[allow(unused_unsafe)]
+    unsafe {
+    match attacker.unwrap() {
         Pieces::Pawn(_) |
         Pieces::Bishop(_) => {
             let king_map = Pieces::Bishop(Bishop::from_bits(*info.king.bits(), game.turn));
@@ -108,7 +112,8 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
                 rays = calc_rays(&king_map, &attack);
             }
         },
-        _ => panic!("King should not be checking another king"),
+        Pieces::King(_) => panic!("King should not be checking another king"),
+    }
     }
 
     for piece in &game.pieces {

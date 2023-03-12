@@ -49,14 +49,17 @@ impl<'a> GameInfo<'a> {
             }
         }
 
-        GameInfo {
-            king: king.unwrap(),
-            check,
-            team_pieces,
-            opp_pieces,
-            opp_attacks,
-            opp_diagonal,
-            opp_straight
+        #[allow(unused_unsafe)]
+        unsafe {
+            GameInfo {
+                king: king.unwrap(),
+                check,
+                team_pieces,
+                opp_pieces,
+                opp_attacks,
+                opp_diagonal,
+                opp_straight
+            }
         }
     }
 }

@@ -126,8 +126,8 @@ impl Game {
             else if piece.bits() & !mv == 0 {
                 remove = Some(i);
             }
-            else if self.en_passant_square & mv == 0 { continue; }
             else if let Pieces::Pawn(p) = piece {
+                if self.en_passant_square & mv == 0 { continue; }
                 let en_passant_square: u128;
                 match p.color() {
                     White => en_passant_square = self.en_passant_square << 0x10,

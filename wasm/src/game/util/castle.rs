@@ -61,18 +61,19 @@ pub use constants::*;
 
 #[inline]
 pub fn add_castling(castling: u16, obstacles: &u128, color: Color, moves: &mut Vec<Pieces>) {
+    if castling == 0 { return; }
     if color == White {
-        if castling & K_ID != 0 && K_VALID & obstacles == 0 {
+        if K_ID & castling != 0 && K_VALID & obstacles == 0 {
             moves.push(Pieces::King(King::from_bits(K_ZONE, White)));
         }
-        if castling & Q_ID != 0 && Q_VALID & obstacles == 0 {
+        if Q_ID & castling != 0 && Q_VALID & obstacles == 0 {
             moves.push(Pieces::King(King::from_bits(Q_ZONE, White)));
         }
     } else { // Black
-        if castling & k_ID != 0 && k_VALID & obstacles == 0 {
+        if k_ID & castling != 0 && k_VALID & obstacles == 0 {
             moves.push(Pieces::King(King::from_bits(k_ZONE, Black)));
         }
-        if castling & q_ID != 0 && q_VALID & obstacles == 0 {
+        if q_ID & castling != 0 && q_VALID & obstacles == 0 {
             moves.push(Pieces::King(King::from_bits(q_ZONE, Black)));
         }
     }
@@ -93,16 +94,16 @@ pub fn fix_castle (mut castling: u16, mv: &u128) -> u16 {
     // if branch structured by have the diagonals as 
     // else ifs for performance reasons, possible negligable
     if *mv & K_SQUARES != 0 {
-        castling &= ! K_ID;
+        castling &= !K_ID;
     }
     else if *mv & q_SQUARES != 0 {
-        castling &= ! q_ID;
+        castling &= !q_ID;
     }
     if *mv & Q_SQUARES != 0 {
-        castling &= ! Q_ID;
+        castling &= !Q_ID;
     }
     else if *mv & k_SQUARES != 0 {
-        castling &= ! k_ID;
+        castling &= !k_ID;
     }
     return castling;
 }
