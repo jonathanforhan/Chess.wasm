@@ -8,28 +8,28 @@ import useWindowDimensions from './hooks/use-window-dimensions.js';
 function App() {
   const _window = useWindowDimensions();
 
-  const [game, setGame] = useState(new Chess("4k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/P2P2PP/r2Q1R1K w k - 0 2"));
+  const [game, setGame] = useState(new Chess("start"));
   const [turn, setTurn] = useState(false);
 
   function oppTurn() {
     let gameCopy: Chess = game.copy();
-    let moves = gameCopy.moves();
-    let i = Math.floor(Math.random() * moves.length);
-    console.log(gameCopy.fen())
-    console.log(moves);
-    if(moves.length === 0) {
-      alert("Game Over");
-      return;
+    try {
+      let best_move = gameCopy.best_move();
+      console.log(gameCopy.fen())
+      console.log(best_move);
+      gameCopy.move(best_move);
+      setGame(gameCopy);
+      console.log(gameCopy.fen())
+      setTurn(false);
+    } catch(e) {
+      console.log(e);
     }
-    gameCopy.move(moves[i]);
-    setGame(gameCopy);
-    console.log(gameCopy.fen())
-    setTurn(false);
   }
 
   useEffect(() => {
     if(!turn) return;
-    oppTurn();
+    setTimeout(() => oppTurn(), 50);
+    //oppTurn();
   }, [turn]);
 
   function onDrop(src: String, dst: String) {

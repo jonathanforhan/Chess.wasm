@@ -18,7 +18,7 @@ fn test_fen() {
 
 #[test]
 fn test_move() {
-    let game = fen::decode("4k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/P2P2PP/r2Q1R1K w k - 0 2").unwrap();
+    let game = fen::decode("1rbqkbnr/pppppppp/n2P4/8/4P3/8/PPP2PPP/RNBQKBNR w KQk - 8 5").unwrap();
     let (mut w, mut b) = (0, 0);
     for p in &game.pieces {
         match p.color() {

@@ -15,6 +15,7 @@ pub mod promote;
 pub mod check;
 
 pub struct GameInfo<'a> {
+    pub valid_moves: u16,
     pub king: &'a Pieces,
     pub check: bool,
     pub team_pieces: u128,
@@ -52,6 +53,7 @@ impl<'a> GameInfo<'a> {
         #[allow(unused_unsafe)]
         unsafe {
             GameInfo {
+                valid_moves: 0,
                 king: king.unwrap(),
                 check,
                 team_pieces,

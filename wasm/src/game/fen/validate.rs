@@ -16,12 +16,12 @@ pub fn validate<'a>(fen: &str) -> Result<(), Box<dyn Error>> {
 
     // 2nd requirement: move number must be unsigned int
     let _ = fen[5].parse::<u32>().map_err(|_| {
-        return Err(Box::new(FenError("Invalid Fen: move number must be positive integer".into())));
+        return Err::<(), Box<FenError>>(Box::new(FenError("Invalid Fen: move number must be positive integer".into())));
     });
 
     // 3rd requirement: half move counter must be unsigned int
     let _ = fen[4].parse::<u32>().map_err(|_| {
-        return Err(Box::new(FenError("Invalid Fen: half move counter must be positive integer".into())));
+        return Err::<(), Box<FenError>>(Box::new(FenError("Invalid Fen: half move counter must be positive integer".into())));
     });
 
     // 4th requirement: 4th field is valid en passant square

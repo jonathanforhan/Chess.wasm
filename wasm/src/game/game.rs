@@ -32,10 +32,20 @@ impl Game {
         Game { pieces, turn, castling, en_passant_square, half_moves, move_count }
     }
 
+    pub fn moves(&self) -> Vec<Pieces> {
+        self.moves_verbose().0
+    }
+
+    pub fn info(&self) -> GameInfo {
+        // high overhead, prefer moves_verbose
+        // in almost all situations
+        self.moves_verbose().1
+    }
+
     /* Moves are added independent of color using team and opp prefixes
      * essentially treating the color's turn as maximizing or minimizing
      */
-    pub fn moves(&self) -> Vec<Pieces> {
+    pub fn moves_verbose(&self) -> (Vec<Pieces>, GameInfo) {
         let mut moves: Vec<Pieces> = Vec::with_capacity(64);
         let mut info = GameInfo::init(&self);
 
@@ -72,7 +82,8 @@ impl Game {
                 if let Pieces::King(_) = *m { return true; }
                 check::filter_pins(&info, &self, &m.bits())
             }).collect::<Vec<Pieces>>();
-            return moves;
+            info.valid_moves = moves.len() as u16;
+            return (moves, info);
         }
 
         /* Gen moves that are check-safe
@@ -86,8 +97,8 @@ impl Game {
             if let Pieces::King(_) = *m { return true; }
             check::filter_pins(&info, &self, &m.bits())
         }).collect::<Vec<Pieces>>();
-
-        return moves;
+        info.valid_moves = moves.len() as u16;
+        return (moves, info);
     }
 
     pub fn move_piece(&mut self, mv: u128) {

@@ -4,6 +4,11 @@ use std::{
 };
 
 pub mod engine;
+pub use engine::Engine;
+mod minimax;
+pub use minimax::minimax;
+mod evaluate;
+pub use evaluate::evaluate;
 
 #[derive(Debug)]
 pub struct EngineError(String);

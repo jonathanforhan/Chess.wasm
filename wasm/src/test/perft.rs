@@ -74,10 +74,13 @@ pub fn perft() {
     fn gen_nodes(game: Game, depth: u32) -> usize {
         let moves = game.moves();
         if depth <= 1 { return moves.len(); }
+        let moves = moves.iter().map(|x| {
+            *x.bits()
+        }).collect::<Vec<u128>>();
         let mut perft = 0;
         for m in moves {
             let mut game_node = game.clone();
-            game_node.move_piece(*m.bits());
+            game_node.move_piece(m);
             perft += gen_nodes(game_node, depth-1);
         }
         return perft;

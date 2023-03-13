@@ -1,4 +1,4 @@
-import init, { moves, move_piece, validate } from "../../wasm/pkg/chess_wasm.js"
+import init, { moves, move_piece, validate, best_move } from "../../wasm/pkg/chess_wasm.js"
 
 interface Chess {
   _fen: string;
@@ -29,6 +29,25 @@ class Chess {
     }
   }
 
+  best_move(): any {
+    try {
+      const mv: any = best_move(this._fen);
+      return mv;
+    } catch(e) {
+      console.log(e);
+      try {
+        const mvs: any = moves(this._fen);
+        if(mvs.length === 0) {
+          alert("Game Over");
+        } else {
+          return mvs[0];
+        }
+      } catch(e) {
+        console.log("best move and move failed", e);
+      }
+    }
+  }
+
   moves(): any {
     const mvs: any = moves(this._fen);
     return mvs;
@@ -44,3 +63,4 @@ class Chess {
 }
 
 export default Chess;
+

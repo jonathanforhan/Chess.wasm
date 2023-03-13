@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use js_sys;
 
-use crate::game::{
+use crate::{game::{
     util::*,
     Game,
     pieces::Color,
@@ -12,7 +12,7 @@ use crate::game::{
         algebraic_to_bits,
         bits_to_algebraic
     }
-};
+}, engine::Engine};
 
 #[wasm_bindgen]
 pub fn validate(fen: &str) -> Result<(), JsError> {
@@ -20,6 +20,71 @@ pub fn validate(fen: &str) -> Result<(), JsError> {
         Ok(_) => Ok(()),
         Err(e) => return Err(JsError::new(&format!("{}", e)))
     }
+}
+
+#[wasm_bindgen]
+pub fn best_move(fen: &str) -> Result<js_sys::Object, JsError> {
+    let game: Game = match fen::decode(fen) {
+        Ok(g) => g,
+        Err(e) => return Err(JsError::new(&format!("{}", e)))
+    };
+
+    let mut best_move = Engine::best_move(fen.into())
+        .map_err(|e| JsError::new(&format!("{}", e)))?;
+
+    let mut current = 0u128;
+    for p in &game.pieces {
+        if p.color() == &game.turn { current |= p.bits(); }
+    }
+
+    match *best_move.bits() {
+        castle::K_ZONE => { best_move.set_bits(&castle::K_MOVE); }
+        castle::Q_ZONE => { best_move.set_bits(&castle::Q_MOVE); }
+        castle::k_ZONE => { best_move.set_bits(&castle::k_MOVE); }
+        castle::q_ZONE => { best_move.set_bits(&castle::q_MOVE); }
+        _ => ()
+    }
+    let mut src = current & best_move.bits();  // find the matching starting location
+    let mut dst = best_move.bits() & !src; // subtract starting pos from move map
+    let mut promotion = 0u128;
+    if let Pieces::Pawn(p) = best_move {
+        match p.color() {
+            Color::White => {
+                dst &= !promote::BLACK_BACK_RANK;
+                src &= !promote::BLACK_BACK_RANK;
+            },
+            Color::Black => {
+                dst &= !promote::WHITE_BACK_RANK;
+                src &= !promote::WHITE_BACK_RANK;
+            },
+        }
+        promotion |= p.bits() ^ (src | dst);
+    }
+
+    let promotion = match promotion {
+        promote::WHITE_ROOK => "R",
+        promote::WHITE_BISHOP => "B",
+        promote::WHITE_KNIGHT => "N",
+        promote::BLACK_ROOK => "r",
+        promote::BLACK_BISHOP => "b",
+        promote::BLACK_KNIGHT => "n",
+        _ => "",
+    };
+
+    // Convert bits to string
+    let obj = js_sys::Object::new();
+
+    let (from ,to) = (bits_to_algebraic(&src)?, bits_to_algebraic(&dst)?);
+
+    // Wrap in JS object
+    js_sys::Reflect::set(&obj, &"from".into(), &JsValue::from_str(&from))
+        .map_err(|_| JsError::new("Wasm object access error"))?;
+    js_sys::Reflect::set(&obj, &"to".into(), &JsValue::from_str(&to))
+        .map_err(|_| JsError::new("Wasm object access error"))?;
+    js_sys::Reflect::set(&obj, &"promotion".into(), &JsValue::from_str(&promotion))
+        .map_err(|_| JsError::new("Wasm object access error"))?;
+
+    Ok(obj)
 }
 
 #[wasm_bindgen]
