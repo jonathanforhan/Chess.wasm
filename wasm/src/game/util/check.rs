@@ -1,3 +1,4 @@
+use std::error::Error;
 use crate::game::{
     pieces::{
         Color::*,
@@ -9,6 +10,7 @@ use crate::game::{
         Queen,
     },
     Game,
+    GameError,
 };
 use super::GameInfo;
 
@@ -39,7 +41,7 @@ pub fn filter_pins(info: &GameInfo, game: &Game, mv: &u128) -> bool {
     return true;
 }
 
-pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
+pub fn gen_check_moves(info: &mut GameInfo, game: &Game, moves: &mut Vec<Pieces>) -> Result<(), Box<dyn Error>> {
     let mut king_rays = 0u128;
 
     let king_ray_maker = Pieces::Queen(Queen::from_bits(*info.king.bits(), game.turn));
@@ -61,7 +63,8 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
                 } else {
                     // if attacker already assigned,
                     // it's double-check and only king moves
-                    return;
+                    info.double_check = true;
+                    return Ok(());
                 }
             }
         }
@@ -78,9 +81,12 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
         return piece_rays & attack;
     };
 
-    #[allow(unused_unsafe)]
-    unsafe {
-    match attacker.unwrap() {
+    let attacker = match attacker {
+        Some(atk) => atk,
+        None => { return Err(Box::new(GameError("Attack value of None".into()))); },
+    };
+
+    match attacker {
         Pieces::Pawn(_) |
         Pieces::Bishop(_) => {
             let king_map = Pieces::Bishop(Bishop::from_bits(*info.king.bits(), game.turn));
@@ -114,7 +120,6 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
         },
         Pieces::King(_) => panic!("King should not be checking another king"),
     }
-    }
 
     for piece in &game.pieces {
         if game.turn == *piece.color() {
@@ -127,4 +132,6 @@ pub fn gen_check_moves(info: &GameInfo, game: &Game, moves: &mut Vec<Pieces>) {
             }
         }
     }
+
+    Ok(())
 }

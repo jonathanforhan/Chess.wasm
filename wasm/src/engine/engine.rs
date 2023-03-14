@@ -14,17 +14,50 @@ pub struct Engine();
 impl Engine {
     pub fn best_move(fen: String) -> Result<Pieces, Box<dyn Error>> {
         let game = fen::decode(&fen)?;
-        let moves = game.moves();
+        let moves = game.moves()?;
         if moves.is_empty() {
             return Err(Box::new(EngineError("No moves".into())));
         }
 
         let result = Arc::new(Mutex::new(Vec::<(usize, i32)>::new()));
 
+        // less moves to calc means
+        // greater depth possible
+        let mut cost = 0u8; // if the calc is expensive
+        for piece in &game.pieces {
+            match piece {
+                Pieces::Pawn(_) => cost += 1,
+                Pieces::Bishop(_) => cost += 3,
+                Pieces::Knight(_) => cost += 2,
+                Pieces::Rook(_) => cost += 3,
+                Pieces::Queen(_) => cost += 7,
+                _ => (),
+            }
+        }
+        let depth;
+        if cost > 50 {
+            depth = 2;
+        } else if cost > 36 {
+            depth = 3;
+        } else if cost > 20 {
+            depth = 4;
+        } else {
+            depth = 5;
+        }
+
+        // the leaves will be different at odd
+        // and even depths so a factor is applied
+        let mut factor = 1;
+        if depth % 2 == 0 {
+            factor = -1;
+        }
+
         moves.par_iter().enumerate().for_each(|(i, mv)| {
             let mut game_copy = game.clone();
             game_copy.move_piece(*mv.bits());
-            let eval = minimax(game_copy, false, 4, i32::MIN, i32::MAX);
+            let eval = minimax(game_copy.clone(), false, depth, i32::MIN, i32::MAX, factor).unwrap_or_else(|_| {
+                minimax(game_copy.clone(), false, depth-1, i32::MIN, i32::MAX, -factor).unwrap()
+            });
             let result_copy = result.clone();
             result_copy.lock().unwrap().push((i, eval));
         });

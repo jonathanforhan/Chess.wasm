@@ -15,11 +15,13 @@ function App() {
     let gameCopy: Chess = game.copy();
     try {
       let best_move = gameCopy.best_move();
-      console.log(gameCopy.fen())
-      console.log(best_move);
+      console.log(gameCopy.fen(), best_move);
       gameCopy.move(best_move);
       setGame(gameCopy);
       console.log(gameCopy.fen())
+      if(gameCopy.moves().length === 0) {
+        setTimeout(() => alert("Game Over"), 100);
+      }
       setTurn(false);
     } catch(e) {
       console.log(e);
@@ -29,7 +31,6 @@ function App() {
   useEffect(() => {
     if(!turn) return;
     setTimeout(() => oppTurn(), 50);
-    //oppTurn();
   }, [turn]);
 
   function onDrop(src: String, dst: String) {
@@ -47,6 +48,18 @@ function App() {
     setGame(gameCopy)
     setTurn(true);
     return true;
+  }
+
+  function undo() {
+    let gameCopy: Chess = game.copy();
+    gameCopy.undo();
+    setGame(gameCopy);
+  }
+
+  function reset() {
+    let gameCopy: Chess = game.copy();
+    gameCopy.reset();
+    setGame(gameCopy);
   }
 
   return (
@@ -70,7 +83,10 @@ function App() {
             customLightSquareStyle={{ backgroundColor: "#edeed1" }}
           />
         </div>
-        <SideBar/>
+        <SideBar
+          undo={undo}
+          reset={reset}
+        />
       </div>
     </div>
   )

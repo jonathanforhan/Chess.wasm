@@ -2,6 +2,7 @@ import init, { moves, move_piece, validate, best_move } from "../../wasm/pkg/che
 
 interface Chess {
   _fen: string;
+  _stack: string[];
 };
 
 class Chess {
@@ -10,15 +11,29 @@ class Chess {
     if(this._fen === undefined || this._fen === "start") {
       this._fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     }
+    this._stack = [];
     init();
   }
 
   copy() {
-    return new Chess(this._fen);
+    let chess = new Chess(this._fen);
+    chess._stack = this._stack;
+    return chess;
   }
 
   fen() {
     return this._fen;
+  }
+
+  undo() {
+    if(this._stack.length === 0) { return; }
+    this._stack.pop();
+    this._fen = this._stack.at(-1);
+  }
+
+  reset() {
+    this._stack = [];
+    this._fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   }
 
   validate(fen: string) {
@@ -35,6 +50,9 @@ class Chess {
       return mv;
     } catch(e) {
       console.log(e);
+      if(e == "No moves") {
+        alert("Game Over");
+      }
       try {
         const mvs: any = moves(this._fen);
         if(mvs.length === 0) {
@@ -56,6 +74,7 @@ class Chess {
   move(mv: Object) {
     try {
       this._fen = move_piece(this._fen, mv);
+      this._stack.push(this._fen);
     } catch(e) {
       throw e;
     }

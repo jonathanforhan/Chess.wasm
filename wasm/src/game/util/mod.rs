@@ -18,6 +18,9 @@ pub struct GameInfo<'a> {
     pub valid_moves: u16,
     pub king: &'a Pieces,
     pub check: bool,
+    pub double_check: bool,
+    pub checkmate: bool,
+    pub stalemate: bool,
     pub team_pieces: u128,
     pub opp_pieces: u128,
     pub opp_attacks: u128,
@@ -50,18 +53,18 @@ impl<'a> GameInfo<'a> {
             }
         }
 
-        #[allow(unused_unsafe)]
-        unsafe {
-            GameInfo {
-                valid_moves: 0,
-                king: king.unwrap(),
-                check,
-                team_pieces,
-                opp_pieces,
-                opp_attacks,
-                opp_diagonal,
-                opp_straight
-            }
+        GameInfo {
+            valid_moves: 0,
+            king: king.unwrap(),
+            check,
+            checkmate: false,
+            double_check: false,
+            stalemate: false,
+            team_pieces,
+            opp_pieces,
+            opp_attacks,
+            opp_diagonal,
+            opp_straight,
         }
     }
 }

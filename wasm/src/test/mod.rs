@@ -1,6 +1,9 @@
 mod perft;
 #[cfg(test)]
 mod test {
+#[allow(unused)]
+use crate::{game::notation::algebraic_to_bits, engine::Engine};
+
 use super::super::game::{
     fen,
     pieces::{Color::*, *},
@@ -18,7 +21,8 @@ fn test_fen() {
 
 #[test]
 fn test_move() {
-    let game = fen::decode("1rbqkbnr/pppppppp/n2P4/8/4P3/8/PPP2PPP/RNBQKBNR w KQk - 8 5").unwrap();
+    //std::env::set_var("RUST_BACKTRACE", "1");
+    let game = fen::decode("1n2k2r/r7/p6p/5Np1/Pp2n1P1/8/1PP2QKP/R7 b k - 0 31").unwrap();
     let (mut w, mut b) = (0, 0);
     for p in &game.pieces {
         match p.color() {
@@ -27,16 +31,9 @@ fn test_move() {
         }
     }
 
-    print_bits(&(w|b), 'o');
+    let mv = Engine::best_move("1n2k2r/r7/p6p/5Np1/Pp2n1P1/8/1PP2QKP/R7 b k - 0 31".into()).unwrap();
 
-    let mv = game.moves();
-    for m in &mv {
-        if let Pieces::Pawn(r) = m {
-            print_bits(&r.bits(), 'r');
-        }
-    }
-
-    println!("{}", mv.len());
+    print_bits(mv.bits(), 'x');
 }
 
 pub fn print_bits(x: &u128, c: char) {

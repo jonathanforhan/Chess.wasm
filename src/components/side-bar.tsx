@@ -7,18 +7,13 @@ export default function SideBar(props: any) {
       <div className='ButtonWrapper'>
         <button className='UndoButton'
           onClick={() => {
-            props.safeGameMutate((g: any) => g.undo());
-            props.chessboardRef.current?.clearPremoves();
-            clearTimeout(props.currentTimeout);
+            props.undo();
+            props.undo();
           }}
         > Undo
         </button>
         <button className='ResetButton'
-          onClick={() => {
-            props.safeGameMutate((g: any) => g.reset());
-            props.chessboardRef.current?.clearPremoves();
-            clearTimeout(props.currentTimeout);
-          }}
+          onClick={() => props.reset() }
         > Reset
         </button>
       </div>

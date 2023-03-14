@@ -51,24 +51,43 @@ pub fn add_promotions(mv: &Pieces, moves: &mut Vec<Pieces>) {
 }
 
 #[inline]
-pub fn try_promote (piece: &mut Pieces, mv: &u128, turn: Color) {
-    if mv & (BLACK_BACK_RANK | WHITE_BACK_RANK) == 0 { return; }
+pub fn try_promote (piece: &mut Pieces, mv: &mut u128, turn: Color) {
     match turn {
         White => {
-            let mv = mv & BLACK_BACK_RANK; // isolate identifier bit
-            match mv {
-                WHITE_BISHOP => *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), White)),
-                WHITE_KNIGHT => *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), White)),
-                WHITE_ROOK => *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), White)),
+            if *mv & WHITE_BACK_RANK == 0 { return; }
+            let id = *mv & BLACK_BACK_RANK;
+            match id {
+                WHITE_BISHOP => {
+                    *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), White));
+                    *mv &= !WHITE_BISHOP;
+                },
+                WHITE_KNIGHT => {
+                    *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), White));
+                    *mv &= !WHITE_KNIGHT;
+                },
+                WHITE_ROOK => {
+                    *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), White));
+                    *mv &= !WHITE_ROOK;
+                },
                 _ => *piece = Pieces::Queen(Queen::from_bits(*piece.bits(), White))
             }
         },
         Black => {
-            let mv = mv & WHITE_BACK_RANK; // isolate identifier bit
-            match mv {
-                BLACK_BISHOP => *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), Black)),
-                BLACK_KNIGHT => *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), Black)),
-                BLACK_ROOK => *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), Black)),
+            if *mv & BLACK_BACK_RANK == 0 { return; }
+            let id = *mv & WHITE_BACK_RANK;
+            match id {
+                BLACK_BISHOP => {
+                    *piece = Pieces::Bishop(Bishop::from_bits(*piece.bits(), Black));
+                    *mv &= !BLACK_BISHOP;
+                },
+                BLACK_KNIGHT => {
+                    *piece = Pieces::Knight(Knight::from_bits(*piece.bits(), Black));
+                    *mv &= !BLACK_KNIGHT;
+                },
+                BLACK_ROOK => {
+                    *piece = Pieces::Rook(Rook::from_bits(*piece.bits(), Black));
+                    *mv &= !BLACK_ROOK;
+                },
                 _ => *piece = Pieces::Queen(Queen::from_bits(*piece.bits(), Black))
             }
         }

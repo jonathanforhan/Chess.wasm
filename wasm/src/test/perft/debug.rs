@@ -28,7 +28,7 @@ fn uci_moves(game: &Game) -> Vec<String> {
 
     let mut moves: Vec<String> = Vec::new();
 
-    for mut m in game.moves() {
+    for mut m in game.moves().unwrap() {
         let m_copy = m.clone();
         match *m.bits() {
             castle::K_ZONE => m.set_bits(&castle::K_MOVE),
@@ -112,7 +112,7 @@ pub fn debug(game: Game, depth: u32) {
     let fen = fen::encode(&game).unwrap();
     let board = Board::from_str(&*fen).expect("Valid Fen");
 
-    let moves = game.moves();
+    let moves = game.moves().unwrap();
     let valid_moves = MoveGen::new_legal(&board);
     let test_moves = uci_moves(&game);
 

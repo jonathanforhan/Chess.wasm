@@ -18,6 +18,18 @@ pub fn decode<'a>(fen: &str) -> Result<Game, Box<dyn Error>> {
     let fen: Vec<&str> = fen.split_whitespace().collect();
     
     let mut pieces = Vec::<Pieces>::new();
+    
+    /* Moves are seperated in to component pieces
+     * ordered by piece value, this speeds up alpha-beta
+     * pruning
+     */
+
+    let mut pawns = Vec::<Pieces>::new();
+    let mut bishops = Vec::<Pieces>::new();
+    let mut knights = Vec::<Pieces>::new();
+    let mut rooks = Vec::<Pieces>::new();
+    let mut queens = Vec::<Pieces>::new();
+    let mut kings = Vec::<Pieces>::new();
 
     // decode board
     let rows: Vec<&str> = fen[0].split('/').collect();
@@ -29,24 +41,31 @@ pub fn decode<'a>(fen: &str) -> Result<Game, Box<dyn Error>> {
                 x += c as usize;
             } else {
                 match c {
-                    'p' => { pieces.push(Pieces::Pawn(Pawn::new(x, y, Color::Black))) },
-                    'b' => { pieces.push(Pieces::Bishop(Bishop::new(x, y, Color::Black))) },
-                    'n' => { pieces.push(Pieces::Knight(Knight::new(x, y, Color::Black))) },
-                    'r' => { pieces.push(Pieces::Rook(Rook::new(x, y, Color::Black))) },
-                    'q' => { pieces.push(Pieces::Queen(Queen::new(x, y, Color::Black))) },
-                    'k' => { pieces.push(Pieces::King(King::new(x, y, Color::Black))) },
-                    'P' => { pieces.push(Pieces::Pawn(Pawn::new(x, y, Color::White))) },
-                    'B' => { pieces.push(Pieces::Bishop(Bishop::new(x, y, Color::White))) },
-                    'N' => { pieces.push(Pieces::Knight(Knight::new(x, y, Color::White))) },
-                    'R' => { pieces.push(Pieces::Rook(Rook::new(x, y, Color::White))) },
-                    'Q' => { pieces.push(Pieces::Queen(Queen::new(x, y, Color::White))) },
-                    'K' => { pieces.push(Pieces::King(King::new(x, y, Color::White))) },
+                    'p' => { pawns.push(Pieces::Pawn(Pawn::new(x, y, Color::Black))) },
+                    'b' => { bishops.push(Pieces::Bishop(Bishop::new(x, y, Color::Black))) },
+                    'n' => { knights.push(Pieces::Knight(Knight::new(x, y, Color::Black))) },
+                    'r' => { rooks.push(Pieces::Rook(Rook::new(x, y, Color::Black))) },
+                    'q' => { queens.push(Pieces::Queen(Queen::new(x, y, Color::Black))) },
+                    'k' => { kings.push(Pieces::King(King::new(x, y, Color::Black))) },
+                    'P' => { pawns.push(Pieces::Pawn(Pawn::new(x, y, Color::White))) },
+                    'B' => { bishops.push(Pieces::Bishop(Bishop::new(x, y, Color::White))) },
+                    'N' => { knights.push(Pieces::Knight(Knight::new(x, y, Color::White))) },
+                    'R' => { rooks.push(Pieces::Rook(Rook::new(x, y, Color::White))) },
+                    'Q' => { queens.push(Pieces::Queen(Queen::new(x, y, Color::White))) },
+                    'K' => { kings.push(Pieces::King(King::new(x, y, Color::White))) },
                     _ => { throw(); }
                 }
                 x += 1;
             }
         }
     }
+
+    pieces.append(&mut pawns);
+    pieces.append(&mut bishops);
+    pieces.append(&mut knights);
+    pieces.append(&mut rooks);
+    pieces.append(&mut queens);
+    pieces.append(&mut kings);
 
     let turn = match fen[1] {
         "w" => Color::White,

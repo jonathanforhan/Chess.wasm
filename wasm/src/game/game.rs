@@ -1,5 +1,6 @@
-use std::io::{Result, Error};
+use std::error::Error;
 use super::{
+    GameError,
     pieces::{
         Color,
         Color::White,
@@ -32,20 +33,20 @@ impl Game {
         Game { pieces, turn, castling, en_passant_square, half_moves, move_count }
     }
 
-    pub fn moves(&self) -> Vec<Pieces> {
-        self.moves_verbose().0
+    pub fn moves(&self) -> Result<Vec<Pieces>, Box<dyn Error>> {
+        Ok(self.moves_verbose()?.0)
     }
 
-    pub fn info(&self) -> GameInfo {
+    pub fn info(&self) -> Result<GameInfo, Box<dyn Error>> {
         // high overhead, prefer moves_verbose
         // in almost all situations
-        self.moves_verbose().1
+        Ok(self.moves_verbose()?.1)
     }
 
     /* Moves are added independent of color using team and opp prefixes
      * essentially treating the color's turn as maximizing or minimizing
      */
-    pub fn moves_verbose(&self) -> (Vec<Pieces>, GameInfo) {
+    pub fn moves_verbose(&self) -> Result<(Vec<Pieces>, GameInfo), Box<dyn Error>> {
         let mut moves: Vec<Pieces> = Vec::with_capacity(64);
         let mut info = GameInfo::init(&self);
 
@@ -83,7 +84,10 @@ impl Game {
                 check::filter_pins(&info, &self, &m.bits())
             }).collect::<Vec<Pieces>>();
             info.valid_moves = moves.len() as u16;
-            return (moves, info);
+            if info.valid_moves == 0 {
+                info.stalemate = true;
+            }
+            return Ok((moves, info));
         }
 
         /* Gen moves that are check-safe
@@ -91,17 +95,20 @@ impl Game {
          * and gen moves. Compare the king's sight
          * to attack piece sight and allows for blocking the check
          */
-        check::gen_check_moves(&info, &self, &mut moves);
+        check::gen_check_moves(&mut info, &self, &mut moves)?;
 
         let moves = moves.into_iter().filter(|m| {
             if let Pieces::King(_) = *m { return true; }
             check::filter_pins(&info, &self, &m.bits())
         }).collect::<Vec<Pieces>>();
         info.valid_moves = moves.len() as u16;
-        return (moves, info);
+        if info.valid_moves == 0 && info.check {
+            info.checkmate = true;
+        }
+        return Ok((moves, info));
     }
 
-    pub fn move_piece(&mut self, mv: u128) {
+    pub fn move_piece(&mut self, mut mv: u128) {
         let mut remove: Option<usize> = None;
         let mut ep_remove: Option<usize> = None;
 
@@ -116,19 +123,22 @@ impl Game {
                         self.en_passant_square = ep;
                         ep_this_turn = true;
                     }
-                    promote::try_promote(piece, &mv, self.turn);
-                }
-
-                if self.castling == 0 {
-                    piece.set_bits(&(piece.bits() ^ mv));
-                    continue;
+                    promote::try_promote(piece, &mut mv, self.turn);
                 }
 
                 match mv {
-                    castle::K_ZONE => castle::try_castle(piece, castle::K_MOVE, castle::K_ROOK),
-                    castle::Q_ZONE => castle::try_castle(piece, castle::Q_MOVE, castle::Q_ROOK),
-                    castle::k_ZONE => castle::try_castle(piece, castle::k_MOVE, castle::k_ROOK),
-                    castle::q_ZONE => castle::try_castle(piece, castle::q_MOVE, castle::q_ROOK),
+                    castle::K_ZONE => {
+                        castle::try_castle(piece, castle::K_MOVE, castle::K_ROOK);
+                    },
+                    castle::Q_ZONE => {
+                        castle::try_castle(piece, castle::Q_MOVE, castle::Q_ROOK);
+                    },
+                    castle::k_ZONE => {
+                        castle::try_castle(piece, castle::k_MOVE, castle::k_ROOK);
+                    },
+                    castle::q_ZONE => {
+                        castle::try_castle(piece, castle::q_MOVE, castle::q_ROOK);
+                    },
                     _ => piece.set_bits(&(piece.bits() ^ mv))
                 };
 
@@ -170,13 +180,13 @@ impl Game {
         }
     }
 
-    pub fn valid_move(&self, mv: &u128) -> Result<()> {
-        for m in &self.moves() {
+    pub fn valid_move(&self, mv: &u128) -> Result<(), Box<dyn Error>> {
+        for m in &self.moves()? {
             if m.bits() ^ mv == 0 {
                 return Ok(())
             }
         }
-        Err(Error::new(std::io::ErrorKind::Other, "Invalid Move"))
+        Err(Box::new(GameError("Invalid Move".into())))
     }
 }
 
