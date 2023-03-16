@@ -43,10 +43,8 @@ impl Engine {
             depth = 1;
         } else if cost > 24 {
             depth = 2;
-        } else if cost > 12 {
-            depth = 3;
         } else {
-            depth = 4;
+            depth = 3;
         }
 
         // the leaves will be different at odd
