@@ -18,6 +18,8 @@ enum GameState {
 #[must_use]
 pub fn evaluate(game: &Game, info: &GameInfo, factor: i32) -> i32 {
     let mut eval = 0i32;
+    let mut team = 0i32;
+    let mut opp = 0i32;
 
     let game_state = match game.move_count {
         0..=16 => GameState::Early,
@@ -26,44 +28,44 @@ pub fn evaluate(game: &Game, info: &GameInfo, factor: i32) -> i32 {
     };
 
     if info.double_check == true {
-        eval -= 50;
+        eval -= 16;
+    }
+    else if info.check == true && info.valid_moves < 3 {
+        eval -= 16;
     }
     else if info.check == true {
         eval -= 2;
     }
-    if info.valid_moves < 3 {
+    else if info.valid_moves < 3 {
         eval -= 5;
-    }
-    if info.check == true && info.valid_moves < 3 {
-        eval -= 20;
     }
 
     for piece in &game.pieces {
         if *piece.color() == game.turn {
             match piece {
                 Pieces::Pawn(p) => {
-                    eval += PAWN_VAL;
+                    team += PAWN_VAL;
                     if game_state == GameState::Early && p.bits() & HOT_ZONE != 0 {
                         eval += 1;
                     }
                 },
                 Pieces::Bishop(b) => {
-                    eval += BISHOP_VAL;
+                    team += BISHOP_VAL;
                     if game_state == GameState::Early && b.bits() & HOT_ZONE != 0 {
                         eval += 1;
                     }
                 },
                 Pieces::Knight(n) => {
-                    eval += KNIGHT_VAL;
+                    team += KNIGHT_VAL;
                     if game_state == GameState::Early && n.bits() & HOT_ZONE != 0 {
                         eval += 1;
                     }
                 },
                 Pieces::Rook(_) => {
-                    eval += ROOK_VAL;
+                    team += ROOK_VAL;
                 },
                 Pieces::Queen(_) => {
-                    eval += QUEEN_VAL;
+                    team += QUEEN_VAL;
                 },
                 Pieces::King(k) => {
                     if k.bits() & KING_SAFETY != 0 {
@@ -74,28 +76,28 @@ pub fn evaluate(game: &Game, info: &GameInfo, factor: i32) -> i32 {
         } else { // opp
             match piece {
                 Pieces::Pawn(p) => {
-                    eval -= PAWN_VAL;
+                    opp += PAWN_VAL;
                     if game_state == GameState::Early && p.bits() & HOT_ZONE != 0 {
                         eval -= 1;
                     }
                 },
                 Pieces::Bishop(b) => {
-                    eval -= BISHOP_VAL;
+                    opp += BISHOP_VAL;
                     if game_state == GameState::Early && b.bits() & HOT_ZONE != 0 {
                         eval -= 1;
                     }
                 },
                 Pieces::Knight(n) => {
-                    eval -= KNIGHT_VAL;
+                    opp += KNIGHT_VAL;
                     if game_state == GameState::Early && n.bits() & HOT_ZONE != 0 {
                         eval -= 1;
                     }
                 },
                 Pieces::Rook(_) => {
-                    eval -= ROOK_VAL;
+                    opp += ROOK_VAL;
                 },
                 Pieces::Queen(_) => {
-                    eval -= QUEEN_VAL;
+                    opp += QUEEN_VAL;
                 },
                 Pieces::King(k) => {
                     if k.bits() & KING_SAFETY != 0 {
@@ -105,6 +107,14 @@ pub fn evaluate(game: &Game, info: &GameInfo, factor: i32) -> i32 {
             }
         }
     }
+
+    eval += team;
+    eval -= opp;
+    if team > opp {
+        eval += 2;
+    }
+
+
 
     if info.checkmate == true {
         eval = -1_000_000;

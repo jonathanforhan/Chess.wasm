@@ -14,9 +14,12 @@ pub struct Engine();
 impl Engine {
     pub fn best_move(fen: String) -> Result<Pieces, Box<dyn Error>> {
         let game = fen::decode(&fen)?;
-        let moves = game.moves()?;
-        if moves.is_empty() {
-            return Err(Box::new(EngineError("No moves".into())));
+        let (moves, info) = game.moves_verbose()?;
+        if info.checkmate {
+            return Err(Box::new(EngineError("Checkmate".into())));
+        }
+        if info.stalemate {
+            return Err(Box::new(EngineError("Draw".into())));
         }
 
         let result = Arc::new(Mutex::new(Vec::<(usize, i32)>::new()));
@@ -34,15 +37,16 @@ impl Engine {
                 _ => (),
             }
         }
+
         let depth;
         if cost > 50 {
+            depth = 1;
+        } else if cost > 42 {
             depth = 2;
-        } else if cost > 36 {
+        } else if cost > 18 {
             depth = 3;
-        } else if cost > 20 {
-            depth = 4;
         } else {
-            depth = 5;
+            depth = 4;
         }
 
         // the leaves will be different at odd

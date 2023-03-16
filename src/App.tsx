@@ -15,10 +15,10 @@ function App() {
     let gameCopy: Chess = game.copy();
     try {
       let best_move = gameCopy.best_move();
-      console.log(gameCopy.fen(), best_move);
+      console.log("Best move:", best_move);
       gameCopy.move(best_move);
       setGame(gameCopy);
-      console.log(gameCopy.fen())
+      console.log(gameCopy.fen)
       if(gameCopy.moves().length === 0) {
         setTimeout(() => alert("Game Over"), 100);
       }
@@ -29,7 +29,12 @@ function App() {
   }
 
   useEffect(() => {
-    if(!turn) return;
+    while(!turn) {
+      setTimeout(async function() {
+          await game.queue_moves();
+      }, 100);
+      return;
+    };
     setTimeout(() => oppTurn(), 50);
   }, [turn]);
 
@@ -69,7 +74,7 @@ function App() {
         <div>
           <Chessboard
             id='chessBoard'
-            position={game.fen()}
+            position={game.fen}
             boardOrientation={'white'}
             onPieceDrop={onDrop}
             arePremovesAllowed={true}
@@ -86,6 +91,7 @@ function App() {
         <SideBar
           undo={undo}
           reset={reset}
+          setTurn={setTurn}
         />
       </div>
     </div>

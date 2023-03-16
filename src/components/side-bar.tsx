@@ -9,11 +9,15 @@ export default function SideBar(props: any) {
           onClick={() => {
             props.undo();
             props.undo();
+            props.setTurn(false)
           }}
         > Undo
         </button>
         <button className='ResetButton'
-          onClick={() => props.reset() }
+          onClick={() => {
+            props.reset();
+            props.setTurn(false)
+          }}
         > Reset
         </button>
       </div>
