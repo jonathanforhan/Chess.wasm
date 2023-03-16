@@ -79,7 +79,11 @@ function App() {
             onPieceDrop={onDrop}
             arePremovesAllowed={true}
             isDraggablePiece={({ piece }) => piece[0] === "w"}
-            boardWidth={_window.height - (_window.height / 5)}
+            boardWidth={
+              _window.width > 1000 ?
+              _window.height - (_window.height / 5) :
+              _window.width * 0.8
+            }
             customBoardStyle={{
               borderRadius: "4px",
               boxShadow: "0 2px 10px rgba(0, 0, 0, 0.5)",
@@ -89,6 +93,7 @@ function App() {
           />
         </div>
         <SideBar
+          width={_window.width}
           undo={undo}
           reset={reset}
           setTurn={setTurn}
