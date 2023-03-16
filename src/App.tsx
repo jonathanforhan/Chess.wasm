@@ -82,7 +82,7 @@ function App() {
             boardWidth={
               _window.width > 1000 ?
               _window.height - (_window.height / 5) :
-              _window.width * 0.8
+              _window.width * 0.95
             }
             customBoardStyle={{
               borderRadius: "4px",

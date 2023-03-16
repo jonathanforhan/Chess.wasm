@@ -43,7 +43,7 @@
     .Chess {
         display: grid;
         justify-content: center;
-        padding: 0px 5vh;
+        padding: 0;
     }
 
     .SideBar {
