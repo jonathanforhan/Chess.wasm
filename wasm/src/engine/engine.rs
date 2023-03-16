@@ -41,7 +41,7 @@ impl Engine {
         let depth;
         if cost > 50 {
             depth = 1;
-        } else if cost > 42 {
+        } else if cost > 34 {
             depth = 2;
         } else if cost > 18 {
             depth = 3;
