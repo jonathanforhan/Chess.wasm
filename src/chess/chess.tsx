@@ -69,7 +69,9 @@ class Chess {
         this._stack[this._stack.length - 5].split(" ")[0],
         this._stack[this._stack.length - 9].split(" ")[0],
       ];
-      if(stack_copy[0] !== stack_copy[1] && stack_copy[1] !== stack_copy[2]) {
+      if(stack_copy[0] !== stack_copy[1] ||
+        stack_copy[1] !== stack_copy[2] ||
+        stack_copy[2] === undefined) {
         return result;
       } else {
         let result = moves(this._fen) as Move[];
