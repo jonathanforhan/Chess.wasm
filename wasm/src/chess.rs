@@ -23,31 +23,6 @@ pub fn validate(fen: &str) -> Result<(), JsError> {
 }
 
 #[wasm_bindgen]
-pub async fn queue_moves(fen: String) -> Result<JsValue, JsError> {
-    let moves = moves(fen.as_str())?;
-
-    let arr = js_sys::Array::new();
-
-    for mv in moves.iter() {
-        let game = move_piece(fen.as_str(), js_sys::Object::from(mv.clone()))?;
-        let best_mv = best_move(game.as_str())?;
-
-        let obj = js_sys::Object::new();
-        js_sys::Reflect::set(&obj, &"action".into(), &mv)
-            .map_err(|_| JsError::new("Wasm object access error (action)"))?;
-        js_sys::Reflect::set(&obj, &"reaction".into(), &best_mv)
-        .map_err(|_| JsError::new("Wasm object access error (reaction)"))?;
-
-        arr.push(&obj);
-    };
-
-    let promise = js_sys::Promise::resolve(&arr.into());
-    let result = wasm_bindgen_futures::JsFuture::from(promise).await.unwrap();
-
-    return Ok(result);
-}
-
-#[wasm_bindgen]
 pub fn best_move(fen: &str) -> Result<js_sys::Object, JsError> {
     let game: Game = match fen::decode(fen) {
         Ok(g) => g,

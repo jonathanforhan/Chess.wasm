@@ -1,4 +1,4 @@
-import init, { moves, move_piece, validate, best_move, queue_moves } from "../../wasm/pkg/chess_wasm.js"
+import init, { moves, move_piece, validate, best_move } from "../../wasm/pkg/chess_wasm.js"
 
 interface Move {
   to: String,
@@ -59,44 +59,35 @@ class Chess {
     }
   }
 
-  async queue_moves() {
-    const mvs = await queue_moves(this._fen);
-    console.log("Queued moves: ", mvs)
-    this._moves = mvs as MoveQueue[];
-  }
-
   best_move(): Move {
     try {
       let result: Move;
-      for(let m of this._moves) {
-        if(m.action.to === this._last_move.to &&
-          m.action.from === this._last_move.from) {
-          result = m.reaction;
-        }
+      result = best_move(this._fen) as Move;
+      // try to eliminate repeating moves
+      let stack_copy = [
+        this._stack[this._stack.length - 1].split(" ")[0],
+        this._stack[this._stack.length - 5].split(" ")[0],
+        this._stack[this._stack.length - 9].split(" ")[0],
+      ];
+      if(stack_copy[0] !== stack_copy[1] && stack_copy[1] !== stack_copy[2]) {
+        return result;
+      } else {
+        let result = moves(this._fen) as Move[];
+        let i = Math.floor(Math.random() * moves.length);
+        return result[i];
       }
-      if(result === undefined) {
-        console.log("Lazy error");
-        result = best_move(this._fen) as Move;
-      }
-      return result;
     } catch(e) {
       console.log(e);
-      if(e == "Checkmate") {
+      if(e == "Engine Error: Checkmate") {
         alert(e);
       }
-      if(e == "Draw") {
+      else if(e == "Draw") {
         alert(e);
+      } else {
+        let result = moves(this._fen) as Move[];
+        let i = Math.floor(Math.random() * moves.length);
+        return result[i];
       }
-      //try {
-        //const mvs: Move[] = moves(this._fen);
-        //if(mvs.length === 0) {
-          //alert("Game Over");
-        //} else {
-          //return mvs[0];
-        //}
-      //} catch(e) {
-        //console.log("best move and move failed", e);
-      //}
     }
   }
 
@@ -114,15 +105,6 @@ class Chess {
       throw e;
     }
   }
-
-  private __move(mv: Move) {
-    try {
-      this._fen =  move_piece(this._fen, mv);
-    } catch(e) {
-      throw e;
-    }
-  }
 }
 
 export default Chess;
-

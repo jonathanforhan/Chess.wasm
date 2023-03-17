@@ -40,11 +40,13 @@ impl Engine {
 
         let depth;
         if cost > 50 {
-            depth = 1;
-        } else if cost > 24 {
             depth = 2;
-        } else {
+        } else if cost > 24 {
             depth = 3;
+        } else if cost > 12 {
+            depth = 4;
+        } else {
+            depth = 5;
         }
 
         // the leaves will be different at odd

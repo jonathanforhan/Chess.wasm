@@ -29,13 +29,9 @@ function App() {
   }
 
   useEffect(() => {
-    while(!turn) {
-      setTimeout(async function() {
-          await game.queue_moves();
-      }, 100);
-      return;
-    };
-    setTimeout(() => oppTurn(), 50);
+    if(turn) {
+      setTimeout(() => oppTurn(), 50);
+    }
   }, [turn]);
 
   function onDrop(src: String, dst: String) {
@@ -59,12 +55,14 @@ function App() {
     let gameCopy: Chess = game.copy();
     gameCopy.undo();
     setGame(gameCopy);
+    setTurn(false);
   }
 
   function reset() {
     let gameCopy: Chess = game.copy();
     gameCopy.reset();
     setGame(gameCopy);
+    setTurn(false);
   }
 
   return (

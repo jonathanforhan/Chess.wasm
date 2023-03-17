@@ -110,14 +110,19 @@ pub fn evaluate(game: &Game, info: &GameInfo, factor: i32) -> i32 {
 
     eval += team;
     eval -= opp;
-    if team > opp {
+    if team > opp && game_state != GameState::Late {
         eval += 2;
     }
 
-
-
     if info.checkmate == true {
-        eval = -1_000_000;
+        eval = -1_000_000 + game.move_count as i32;
+    }
+    if info.valid_moves == 0 && info.check {
+        eval = -1_000_000 + game.move_count as i32;
+    }
+
+    if game.half_moves > 10 && team > opp {
+        eval -= game.half_moves as i32;
     }
 
     // factor used for variable depths
