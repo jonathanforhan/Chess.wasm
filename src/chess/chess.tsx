@@ -60,20 +60,26 @@ class Chess {
   }
 
   best_move(): Move {
+    // try to eliminate repeating moves
+    let stack_copy = [];
+    if(this._stack.length > 12) {
+      stack_copy = [
+        this._stack[this._stack.length - 1].split(" ")[0],
+        this._stack[this._stack.length - 5].split(" ")[0],
+        this._stack[this._stack.length - 9].split(" ")[0]
+      ];
+    }
     try {
       let result: Move;
       result = best_move(this._fen) as Move;
-      // try to eliminate repeating moves
-      let stack_copy = [
-        this._stack[this._stack.length - 1].split(" ")[0],
-        this._stack[this._stack.length - 5].split(" ")[0],
-        this._stack[this._stack.length - 9].split(" ")[0],
-      ];
-      if(stack_copy[0] !== stack_copy[1] ||
+      
+      if(stack_copy.length < 4) { return result; }
+      else if(stack_copy[0] !== stack_copy[1] ||
         stack_copy[1] !== stack_copy[2] ||
         stack_copy[2] === undefined) {
         return result;
       } else {
+        console.log("repeat block")
         let result = moves(this._fen) as Move[];
         let i = Math.floor(Math.random() * moves.length);
         return result[i];

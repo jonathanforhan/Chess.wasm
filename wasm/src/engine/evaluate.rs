@@ -88,7 +88,7 @@ pub fn evaluate(game: &Game, info: &GameInfo, factor: i32) -> i32 {
                     }
                 },
                 Pieces::Knight(n) => {
-                    opp += KNIGHT_VAL;
+                    opp += KNIGHT_VAL-1;
                     if game_state == GameState::Early && n.bits() & HOT_ZONE != 0 {
                         eval -= 1;
                     }
